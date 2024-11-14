@@ -7,6 +7,7 @@ import <string>;
 using std::vector;
 typedef std::vector<vector<unsigned int> > adj_list;
 
+// graph interface
 export class Graph {
 public:
     explicit Graph(const unsigned int v) : _v(v) {
@@ -39,7 +40,7 @@ public:
         return _v;
     }
 
-    [[nodiscard]] auto edge_length() const {
+    [[nodiscard]] constexpr auto edge_length() const {
         return _e;
     }
 
@@ -54,7 +55,7 @@ public:
         return _adj[v];
     }
 
-    static auto max_degree(Graph const &g) {
+    static constexpr auto max_degree(Graph const &g) {
         unsigned int max_deg = 0;
         for (auto v = 0; v < g.vertex_length(); v++)
             if (degree(g, v) > max_deg)
@@ -66,7 +67,7 @@ public:
         return 2 * g.edge_length() / g.vertex_length();
     }
 
-    static auto num_self_loops(Graph const &g) {
+    static constexpr auto num_self_loops(Graph const &g) {
         unsigned int num_self_loops = 0;
         for (auto v = 0; v < g.vertex_length(); v++)
             for (auto f: g.adj(v))
@@ -75,7 +76,8 @@ public:
         return num_self_loops;
     }
 
-    [[nodiscard]] auto _to_string() const {
+    // store the result vertex and edges on a string
+    [[nodiscard]] constexpr auto _to_string() const {
         auto s = std::to_string(_v);
         s.append(" vertices ");
         s.append(std::to_string(_e));
@@ -101,3 +103,45 @@ private:
     unsigned int _e = 0; // number of edges
     unsigned int _v = 0; // number of vertices
 };
+
+//  depth first search interface
+export class DepthFirstSearch {
+public:
+    DepthFirstSearch(Graph const &g, unsigned int s) {
+        _marked.resize(g.vertex_length());
+        dfs(g, s);
+    }
+
+    [[nodiscard]] auto marked(unsigned int w) const {
+        return _marked[static_cast<adj_list::size_type>(w)];
+    }
+
+    [[nodiscard]] auto count() const {
+        return _count;
+    }
+
+private:
+    vector<bool> _marked;
+    unsigned int _count = 0;
+
+    void dfs(Graph const &g, unsigned int v) {
+        _marked[static_cast<adj_list::size_type>(v)] = true;
+        _count++;
+        for (auto w: g.adj(v))
+            if (!_marked[static_cast<adj_list::size_type>(w)])
+                dfs(g, w);
+    }
+};
+
+// check whether given s as vertex is connected component on g
+export void connected_dfs(Graph const &g, unsigned int s) {
+    DepthFirstSearch data(g, s);
+    std::cout << "vertex : " << s << std::endl;
+    for (unsigned int v = 0; v < g.vertex_length(); v++)
+        if (data.marked(v))
+            std::cout << v << " ";
+    std::cout << std::endl;
+    if (data.count() != g.vertex_length())
+        std::cout << "not ";
+    std::cout << "connected" << std::endl;
+}

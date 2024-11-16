@@ -1,6 +1,7 @@
 import <vector>;
 import <utility>;
 import <iostream>;
+import <sstream>;
 import algo_graph;
 
 using std::vector;
@@ -10,7 +11,7 @@ using std::cout;
 using std::endl;
 
 int main() {
-    Graph g(13);
+    /*Graph g(13);
     vector<pair<unsigned int, unsigned int> > edges = {
         make_pair(0, 5), make_pair(4, 3), make_pair(0, 1), make_pair(9, 12),
         make_pair(6, 4), make_pair(5, 4), make_pair(0, 2), make_pair(11, 12),
@@ -52,6 +53,14 @@ int main() {
     // try to connect
     g3.add_edge(0, 1);
     g3.add_edge(0, 2);
-    connected_dfs(g3, 0);
+    connected_dfs(g3, 0);*/
+    std::cout<<"input the data ... " << std::endl;
+    std::istringstream iss("6 8\n0 5\n2 4\n2 3\n1 2\n0 1\n3 4\n3 5\n0 2\n");
+
+    Graph g(iss);
+    g.reverse_order();
+    //connected_dfs(g, 0);
+    std::cout<< finding_path_test(g,0);
+
     return 0;
 }

@@ -4,16 +4,19 @@ import <iostream>;
 import <vector>;
 import <istream>;
 import <string>;
+import <stack>;
+
 using std::vector;
 typedef std::vector<vector<unsigned int> > adj_list;
 
 // graph interface
 export class Graph {
 public:
+    // explicitly ask total vertex to create
     explicit Graph(const unsigned int v) : _v(v) {
         initialize(v);
     }
-
+    // ctor require input from user
     explicit Graph(std::istream &is) {
         unsigned int v_read = 0;
         is >> v_read;
@@ -27,19 +30,25 @@ public:
             add_edge(v, w); //connecting them
         }
     }
-
+    // add edge v-w
     void add_edge(unsigned int v, unsigned int w) {
-        if (v >= _v || w >= _v)
-            throw std::out_of_range("Vertex index out of range");
+        check_invalid_vertex(v, _v);
+        check_invalid_vertex(w, _v);
         _adj[static_cast<adj_list::size_type>(v)].push_back(w); // add w to v's list
         _adj[static_cast<adj_list::size_type>(w)].push_back(v); // add v to w's list
         ++_e;
     }
-
+    // reverse the order, assume the structure is equal to book
+    auto reverse_order() {
+        for(auto i =0; i<_adj.size(); i++)
+            std::reverse(_adj[static_cast<adj_list::size_type>(i)].begin(),
+                _adj[static_cast<adj_list::size_type>(i)].end());
+    }
+    // check total vertex
     [[nodiscard]] constexpr auto vertex_length() const {
         return _v;
     }
-
+    //check total edge
     [[nodiscard]] constexpr auto edge_length() const {
         return _e;
     }
@@ -50,7 +59,7 @@ public:
             deg++;
         return deg;
     }
-
+    // return array which adjacent to v
     [[nodiscard]] constexpr vector<unsigned int> adj(auto v) const {
         return _adj[v];
     }
@@ -102,6 +111,11 @@ private:
     adj_list _adj; // adjacency lists
     unsigned int _e = 0; // number of edges
     unsigned int _v = 0; // number of vertices
+    static void check_invalid_vertex(const unsigned int v, unsigned int _limit) {
+        if(v>= _limit)
+            throw std::out_of_range("Vertex index out of range, limit : "
+                + std::to_string(_limit));
+    }
 };
 
 //  depth first search interface
@@ -112,11 +126,11 @@ public:
         dfs(g, s);
     }
 
-    [[nodiscard]] auto marked(unsigned int w) const {
+    [[nodiscard]] constexpr auto marked(unsigned int w) const {
         return _marked[static_cast<adj_list::size_type>(w)];
     }
 
-    [[nodiscard]] auto count() const {
+    [[nodiscard]] constexpr auto count() const {
         return _count;
     }
 
@@ -144,4 +158,78 @@ export void connected_dfs(Graph const &g, unsigned int s) {
     if (data.count() != g.vertex_length())
         std::cout << "not ";
     std::cout << "connected" << std::endl;
+}
+
+// dfs interface to find paths in a graph
+export class DepthFirstPaths {
+public:
+    DepthFirstPaths(Graph const &g, unsigned int s) : _s{s} {
+        check_input(s, g.vertex_length());
+        _marked.resize(g.vertex_length(), false);
+        _edge_to.resize(g.vertex_length());
+        dfs(g, s);
+    }
+
+    void dfs(Graph const &g, unsigned int v) {
+        _marked[static_cast<adj_list::size_type>(v)] = true;
+        for (auto w: g.adj(v)) {
+            if (!_marked[static_cast<adj_list::size_type>(w)]) {
+                // v-w was the edge used to access w for the first time
+                _edge_to[static_cast<adj_list::size_type>(w)] = v;
+                dfs(g, w);
+            }
+        }
+    }
+
+    [[nodiscard]] bool has_path_to(unsigned int v) const {
+        return _marked[static_cast<adj_list::size_type>(v)];
+    }
+
+    // return the path to v
+    [[nodiscard]] auto path_to(unsigned int v) const {
+        std::vector<unsigned int> temp;
+        if (!has_path_to(v))
+            return temp;
+        std::stack<unsigned int> path;
+        for (auto x = v; x != _s; x = _edge_to[static_cast<adj_list::size_type>(x)])
+            path.push(x);
+        path.push(_s);
+        std::cout<<"path size : "<< path.size()<<std::endl;
+        while (!path.empty()) {
+            temp.push_back(path.top());
+            path.pop();
+        }
+        return temp;
+    }
+
+private:
+    vector<bool> _marked; // has dfs been called for this vertex ?
+    vector<unsigned int> _edge_to; // last vertex on known path to this vertex
+    unsigned int _s = 0; // source
+    static void check_input(unsigned int _source, unsigned int _expected) {
+        if(_source >= _expected)
+            throw std::out_of_range("Source is not a valid input");
+    }
+};
+
+export auto finding_path_test(Graph const &g, unsigned int s) {
+    std::string temp;
+    const auto search = DepthFirstPaths(g, s);
+    for (unsigned int v = 0; v < 6 ; v++) {
+        temp.append(std::to_string(s));
+        temp.append(" to ");
+        temp.append(std::to_string(v));
+        temp.append(": ");
+        if (search.has_path_to(v)) {
+            for (auto x: search.path_to(v)) {
+                if (x == s) temp.append(std::to_string(x));
+                else {
+                    temp.append("-");
+                    temp.append(std::to_string(x));
+                }
+            }
+        }
+        temp.append("\n");
+    }
+    return temp;
 }

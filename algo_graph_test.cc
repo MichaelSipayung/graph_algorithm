@@ -61,6 +61,7 @@ int main() {
     g.reverse_order();
     //connected_dfs(g, 0);
     std::cout<< finding_path_test(g,0);
-
+    std::cout<<"breadth_first_search_test"<<std::endl;
+    std::cout<< finding_path_test_bfs(g,0);
     return 0;
 }

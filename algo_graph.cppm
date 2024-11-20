@@ -55,7 +55,7 @@ public:
     }
 
     //check total edge
-    [[nodiscard]] constexpr auto edge_length() const {
+    [[nodiscard]] auto edge_length() const {
         return _e;
     }
 
@@ -240,6 +240,7 @@ export auto finding_path_test(Graph const &g, unsigned int s) {
     return temp;
 }
 
+// BreadthFirstPaths: interface for finding the shortest path for given graph
 class BreadthFirstPaths {
 public:
     BreadthFirstPaths(Graph const &g, unsigned int s): _s{s} {
@@ -257,9 +258,9 @@ public:
             q.pop();
             for (auto w: g.adj(v)) {
                 if (!_marked[static_cast<adj_list::size_type>(w)]) {
-                    // save last edge on a shortest path
+                    // save last edge on the shortest path
                     _edge_to[static_cast<adj_list::size_type>(w)] = v;
-                    // matk it because path is known
+                    // mark it because path is known
                     _marked[static_cast<adj_list::size_type>(w)] = true;
                     q.push(w); // and add it to the queue
                 }
@@ -314,6 +315,7 @@ export auto finding_path_test_bfs(Graph const &g, unsigned int s) {
     return temp;
 }
 
+// Connected_Components: interface for test if given 2 vertex is connected
 export class Connected_Components {
 public:
     explicit Connected_Components(Graph const &g) {
@@ -353,4 +355,67 @@ private:
     vector<bool> _marked;
     vector<unsigned int> _id; // store the connected component
     unsigned int _count = 0;
+};
+
+// Cycle interface: the purpose is to test the given graph is acyclic or not
+export class Cycle {
+public:
+    explicit Cycle(Graph const &g) {
+        _marked.resize(g.vertex_length(), false);
+        for (unsigned int v = 0; v < g.vertex_length(); v++)
+            if(!_marked[static_cast<adj_list::size_type>(v)])
+                dfs(g, v,v);
+    }
+    void dfs(Graph const &g, unsigned int v, unsigned int u) {
+        _marked[static_cast<adj_list::size_type>(v)] = true;
+        for (auto w: g.adj(v)) {
+            if(!_marked[static_cast<adj_list::size_type>(w)]) {
+                dfs(g,w,v);
+            }else if(w!=u) {
+                _has_cycle = true;
+            }
+        }
+    }
+    [[nodiscard]] auto has_cycle() const {
+        return _has_cycle;
+    }
+private:
+    vector<bool> _marked;
+    bool _has_cycle = false;
+};
+
+// TwoColor: interface for test if given graph is bipartite
+export class TwoColor {
+public:
+    explicit TwoColor(Graph const &g) {
+        _marked.resize(g.vertex_length(), false);
+        _color.resize(g.vertex_length());
+        for (unsigned int v = 0; v < g.vertex_length(); v++)
+            if (!_marked[static_cast<adj_list::size_type>(v)])
+                dfs(g, v);
+    }
+
+    // run dfs with additional step, coloring and checking the color
+    void dfs(Graph const &g, unsigned int v) {
+        _marked[static_cast<adj_list::size_type>(v)] = true;
+        for (auto w: g.adj(v)) {
+            if (!_marked[static_cast<adj_list::size_type>(w)]) {
+                _color[static_cast<adj_list::size_type>(w)] =
+                    !_color[static_cast<adj_list::size_type>(v)];
+                dfs(g, w);
+            } else if(_color[static_cast<adj_list::size_type>(w)] ==
+                _color[static_cast<adj_list::size_type>(v)]) {
+                _is_two_colorable  = false;
+            }
+        }
+    }
+
+    // check if given graph is bipartite
+    [[nodiscard]] auto is_bipartite() const {
+        return _is_two_colorable;
+    }
+private:
+    vector<bool> _marked;
+    vector<bool> _color;
+    bool _is_two_colorable = true;
 };

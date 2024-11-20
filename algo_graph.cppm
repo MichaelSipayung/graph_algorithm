@@ -320,12 +320,13 @@ public:
         _marked.resize(g.vertex_length(), false);
         _id.resize(g.vertex_length());
         for (unsigned int v = 0; v < g.vertex_length(); v++) {
-            if(!_marked[static_cast<adj_list::size_type>(v)]) {
+            if (!_marked[static_cast<adj_list::size_type>(v)]) {
                 dfs(g, static_cast<adj_list::size_type>(v));
                 _count++;
             }
         }
     }
+
     void dfs(const Graph &g, unsigned int v) {
         _marked[static_cast<adj_list::size_type>(v)] = true;
         _id[static_cast<adj_list::size_type>(v)] = _count;
@@ -334,18 +335,22 @@ public:
                 dfs(g, w);
         }
     }
+
     auto connected(unsigned int v, unsigned int w) {
         return _id[static_cast<adj_list::size_type>(v)]
-            ==_id[static_cast<adj_list::size_type>(w)];
+               == _id[static_cast<adj_list::size_type>(w)];
     }
+
     [[nodiscard]] unsigned int id(unsigned int v) const {
         return _id[static_cast<adj_list::size_type>(v)];
     }
+
     [[nodiscard]] unsigned int count() const {
         return _count;
     }
+
 private:
     vector<bool> _marked;
     vector<unsigned int> _id; // store the connected component
-    unsigned int _count=0;
+    unsigned int _count = 0;
 };

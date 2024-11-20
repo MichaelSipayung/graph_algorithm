@@ -9,73 +9,26 @@ using std::pair;
 using std::make_pair;
 using std::cout;
 using std::endl;
-auto test_connected_components(Graph &data) {
-    cout<<"test connected components"<<endl;
-    data.reverse_order();
-    auto cc = Connected_Components(data);
-    // simple connectivity test
-    cout<<"is(0,3) connected components: "<< cc.connected(0,3)<<endl;
-    cout<<"0 id : " << cc.id(0)<<endl;
-    cout<<"3 id : " << cc.id(3)<<endl;
-    cout<<"2 id : " << cc.id(2)<<endl;
 
-    cout<<"is(0,7) connected components: "<< cc.connected(0,7)<<endl;
-    cout<<"is(7,12) connected components: "<< cc.connected(7,12)<<endl;
-}
+typedef vector<vector<unsigned int> > adj_list;
+
+void test_connected_components(const Graph &data);
+
+void test_connected_components_show(const Graph &data);
+
+void test_breadth_first(const Graph &data);
+
+void test_depth_first(const Graph &data);
+
 int main() {
-    /*Graph g(13);
-    vector<pair<unsigned int, unsigned int> > edges = {
-        make_pair(0, 5), make_pair(4, 3), make_pair(0, 1), make_pair(9, 12),
-        make_pair(6, 4), make_pair(5, 4), make_pair(0, 2), make_pair(11, 12),
-        make_pair(9, 10), make_pair(0, 6), make_pair(7, 8), make_pair(9, 11),
-        make_pair(5, 3)
-    };
-    for (auto e: edges) {
-        g.add_edge(e.first, e.second);
-    }
-    cout << g._to_string() << endl;
-
-    std::istream &is = std::cin;
-    Graph g2(is);
-    cout << g2._to_string() << endl;
-    cout << "g2 pass" << endl;
-
-    Graph g3(6);
-    vector<pair<unsigned int, unsigned int> > edges2 = {
-        make_pair(1, 2), make_pair(1, 5), make_pair(2, 5), make_pair(4, 5),
-        make_pair(2, 4), make_pair(2, 3), make_pair(4, 3),
-    };
-    for (auto e: edges2) {
-        g3.add_edge(e.first, e.second);
-    }
-    cout << g3._to_string() << endl;
-
-    // connected component test (graph processing)
-    connected_dfs(g, 0);
-    connected_dfs(g, 9);
-
-    // connected case
-    const Graph connect_case(std::cin);
-    cout << connect_case._to_string() << endl;
-    connected_dfs(connect_case, 0);
-    connected_dfs(connect_case, 1);
-    connected_dfs(connect_case, 2);
-    connected_dfs(connect_case, 3);
-
-    // try to connect
-    g3.add_edge(0, 1);
-    g3.add_edge(0, 2);
-    connected_dfs(g3, 0);*/
-    std::cout<<"input the data ... " << std::endl;
+    std::cout << "input the data ... " << std::endl;
     std::istringstream iss("6 8\n0 5\n2 4\n2 3\n1 2\n0 1\n3 4\n3 5\n0 2\n");
 
     Graph g(iss);
     g.reverse_order();
     //connected_dfs(g, 0);
-    std::cout<< finding_path_test(g,0);
-    std::cout<<"breadth_first_search_test"<<std::endl;
-    std::cout<< finding_path_test_bfs(g,0);
-
+    test_breadth_first(g);
+    test_depth_first(g);
     Graph sample_2(13);
     vector<pair<unsigned int, unsigned int> > edges = {
         make_pair(0, 5), make_pair(4, 3), make_pair(0, 1), make_pair(9, 12),
@@ -83,9 +36,50 @@ int main() {
         make_pair(9, 10), make_pair(0, 6), make_pair(7, 8), make_pair(9, 11),
         make_pair(5, 3)
     };
-    for(auto e : edges) {
+    for (auto e: edges) {
         sample_2.add_edge(e.first, e.second);
     }
+    sample_2.reverse_order();
     test_connected_components(sample_2);
+    test_connected_components_show(sample_2);
     return 0;
+}
+
+void test_connected_components(const Graph &data) {
+    cout << "test connected components" << endl;
+    auto cc = Connected_Components(data);
+    // simple connectivity test
+    cout << "is(0,3) connected components: " << cc.connected(0, 3) << endl;
+    cout << "is(0,7) connected components: " << cc.connected(0, 7) << endl;
+    cout << "is(7,12) connected components: " << cc.connected(7, 12) << endl;
+    cout << endl;
+}
+
+void test_connected_components_show(const Graph &data) {
+    cout << "show connected components" << endl;
+    auto cc = Connected_Components(data);
+    vector<vector<unsigned int> > components;
+    auto count = cc.count();
+    components.resize(count);
+    for (unsigned int i = 0; i < data.vertex_length(); i++)
+        components[static_cast<adj_list::size_type>(cc.id(i))].push_back(i);
+    // optional, make it's same with bag data type
+    for (unsigned int i = 0; i < components.size(); i++)
+        std::reverse(components[static_cast<adj_list::size_type>(i)].begin(),
+                     components[static_cast<adj_list::size_type>(i)].end());
+    for (unsigned int i = 0; i < count; i++) {
+        for (auto v: components[static_cast<adj_list::size_type>(i)])
+            cout << v << " ";
+        cout << endl;
+    }
+}
+
+void test_breadth_first(const Graph &data) {
+    cout << "test breadth first - shortest path" << endl;
+    std::cout << finding_path_test_bfs(data, 0) << endl;
+}
+
+void test_depth_first(const Graph &data) {
+    cout << "test depth first - path to" << endl;
+    std::cout << finding_path_test(data, 0) << endl;
 }

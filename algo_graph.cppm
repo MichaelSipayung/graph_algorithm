@@ -313,3 +313,39 @@ export auto finding_path_test_bfs(Graph const &g, unsigned int s) {
     }
     return temp;
 }
+
+export class Connected_Components {
+public:
+    explicit Connected_Components(Graph const &g) {
+        _marked.resize(g.vertex_length(), false);
+        _id.resize(g.vertex_length());
+        for (unsigned int v = 0; v < g.vertex_length(); v++) {
+            if(!_marked[static_cast<adj_list::size_type>(v)]) {
+                dfs(g, static_cast<adj_list::size_type>(v));
+                _count++;
+            }
+        }
+    }
+    void dfs(const Graph &g, unsigned int v) {
+        _marked[static_cast<adj_list::size_type>(v)] = true;
+        _id[static_cast<adj_list::size_type>(v)] = _count;
+        for (auto w: g.adj(v)) {
+            if (!_marked[static_cast<adj_list::size_type>(w)])
+                dfs(g, w);
+        }
+    }
+    auto connected(unsigned int v, unsigned int w) {
+        return _id[static_cast<adj_list::size_type>(v)]
+            ==_id[static_cast<adj_list::size_type>(w)];
+    }
+    [[nodiscard]] unsigned int id(unsigned int v) const {
+        return _id[static_cast<adj_list::size_type>(v)];
+    }
+    [[nodiscard]] unsigned int count() const {
+        return _count;
+    }
+private:
+    vector<bool> _marked;
+    vector<unsigned int> _id; // store the connected component
+    unsigned int _count=0;
+};

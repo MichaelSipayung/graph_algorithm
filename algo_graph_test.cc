@@ -9,7 +9,19 @@ using std::pair;
 using std::make_pair;
 using std::cout;
 using std::endl;
+auto test_connected_components(Graph &data) {
+    cout<<"test connected components"<<endl;
+    data.reverse_order();
+    auto cc = Connected_Components(data);
+    // simple connectivity test
+    cout<<"is(0,3) connected components: "<< cc.connected(0,3)<<endl;
+    cout<<"0 id : " << cc.id(0)<<endl;
+    cout<<"3 id : " << cc.id(3)<<endl;
+    cout<<"2 id : " << cc.id(2)<<endl;
 
+    cout<<"is(0,7) connected components: "<< cc.connected(0,7)<<endl;
+    cout<<"is(7,12) connected components: "<< cc.connected(7,12)<<endl;
+}
 int main() {
     /*Graph g(13);
     vector<pair<unsigned int, unsigned int> > edges = {
@@ -63,5 +75,17 @@ int main() {
     std::cout<< finding_path_test(g,0);
     std::cout<<"breadth_first_search_test"<<std::endl;
     std::cout<< finding_path_test_bfs(g,0);
+
+    Graph sample_2(13);
+    vector<pair<unsigned int, unsigned int> > edges = {
+        make_pair(0, 5), make_pair(4, 3), make_pair(0, 1), make_pair(9, 12),
+        make_pair(6, 4), make_pair(5, 4), make_pair(0, 2), make_pair(11, 12),
+        make_pair(9, 10), make_pair(0, 6), make_pair(7, 8), make_pair(9, 11),
+        make_pair(5, 3)
+    };
+    for(auto e : edges) {
+        sample_2.add_edge(e.first, e.second);
+    }
+    test_connected_components(sample_2);
     return 0;
 }

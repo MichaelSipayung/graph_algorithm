@@ -6,7 +6,11 @@ import <istream>;
 import <string>;
 import <stack>;
 import <queue>;
+import <fstream>;
+import <map>;
+using std::map;
 using std::queue;
+using std::string;
 using std::vector;
 typedef std::vector<vector<unsigned int>> adj_list;
 
@@ -362,7 +366,7 @@ public:
     for (auto w : g.adj(v)) {
       if (!_marked[static_cast<adj_list::size_type>(w)])
         dfs(g, w, v);
-      else if (w != u)  // the adjacent vertex w is not the parent vertex u
+      else if (w != u) // the adjacent vertex w is not the parent vertex u
         _has_cycle = true;
     }
   }
@@ -408,3 +412,64 @@ private:
   vector<bool> _color;
   bool _is_two_colorable = true;
 };
+
+// symbol graph implementation
+export class SymbolGraph {
+public:
+  explicit SymbolGraph(const string &filename, char sp = ' ')
+      : _graph(0) {
+    std::fstream file(filename, std::ios::in);
+    if (!file.is_open())
+      throw std::runtime_error("Could not open file " + filename);
+    string line, first_line, second_line;
+    vector<string> a = {" ", " "};
+    while (std::getline(file, line)) { // first pass, build the index
+      auto pos = line.find_first_of(sp);
+      first_line = line.substr(0, pos);
+      second_line = line.substr(pos + 1);
+      a[0] = first_line;
+      a[1] = second_line;
+      for (const auto &s : a)
+        if (_st.find(s) == _st.end())
+          _st[s] = _st.size();
+    }
+    // inverted index to get string keys
+    _keys.resize(_st.size());
+    for (const auto &k : _st) {
+      _keys[k.second] = k.first;
+    }
+    // second pass, build the graph, by connecting the first vertex
+    // on each line to all the others
+    file.close();
+    file.open(filename, std::ios::in);
+    _graph = Graph(_st.size());
+    while (std::getline(file, line)) {
+      auto pos = line.find_first_of(sp);
+      first_line = line.substr(0, pos);
+      second_line = line.substr(pos + 1);
+      a[0] = first_line;
+      a[1] = second_line;
+      unsigned int v = _st[first_line];
+      for (unsigned int i = 1; i < a.size(); i++)
+        _graph.add_edge(v, _st[a[i]]);
+    }
+    file.close();
+  }
+
+  // check whether symbol table contains s
+  [[nodiscard]] bool contains(const string &s) const { return _st.find(s) != _st.end(); }
+
+  // get the index given s from symbol table
+  [[nodiscard]] unsigned int index(const string &s) const { return _st.at(s); }
+
+  // get name or string given key v from symbol table
+  [[nodiscard]] string name(unsigned int v) const { return _keys.at(v); }
+
+  // get built graph result from symbol table
+  [[nodiscard]] const Graph& get_graph() const { return _graph; }
+
+private:
+  map<string, unsigned int> _st{};
+  vector<string> _keys{};
+  Graph _graph;
+};;

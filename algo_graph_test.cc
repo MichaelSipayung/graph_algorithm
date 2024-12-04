@@ -3,6 +3,8 @@ import <utility>;
 import <iostream>;
 import <sstream>;
 import algo_graph;
+#include <fmt/core.h>
+#include <fmt/ranges.h>
 
 using std::cout;
 using std::endl;
@@ -21,6 +23,10 @@ void test_breadth_first(const Graph &data);
 void test_depth_first(const Graph &data);
 
 void test_acyclic(Graph const &data);
+
+void test_bipartite(Graph const &data);
+
+void test_symbol_table(const std::string &, char sp= ' ');
 
 int main() {
   std::cout << "input the data ... " << std::endl;
@@ -52,6 +58,26 @@ int main() {
   g3.reverse_order();
   test_acylic(g3);
   */
+  test_bipartite(g);
+  std::istringstream test_bipartitesample(
+    "3 2\n 0 1\n 1 2\n"
+  );
+  Graph bipartite(test_bipartitesample);
+  bipartite.reverse_order();
+  test_bipartite(bipartite);
+  test_bipartite(sample_2);
+
+  std::istringstream iss_2("4 4\n0 1\n0 3\n2 1\n2 3\n");
+  Graph graph_2(iss_2);
+  graph_2.reverse_order();
+  test_bipartite(graph_2);
+
+  std::istringstream iss_3("8 8\n0 4\n0 5\n1 4\n1 6\n2 5\n2 7\n3 6\n3 7\n");
+  Graph graph_3(iss_3);
+  graph_3.reverse_order();
+  test_bipartite(graph_3);
+
+  test_symbol_table("routes.txt");
   return 0;
 }
 
@@ -97,4 +123,23 @@ void test_acyclic(Graph const &data) {
   std::cout << "test acyclic" << std::endl;
   auto cycle = Cycle(data);
   std::cout<<"acyclic graph: "<<cycle.has_cycle()<<std::endl;
+}
+void test_bipartite(Graph const &data) {
+  auto two_coloring = TwoColor(data);
+  cout<<"is bipartite graph: "<<two_coloring.is_bipartite()<<std::endl;
+}
+
+void test_symbol_table(const std::string &file_name, const char sp) {
+  const auto st  = SymbolGraph(file_name,sp);
+  Graph g = st.get_graph();
+  g.reverse_order();
+  std::string line;
+  while (std::cin >> line) {
+    fmt::print(" {}", g.adj(st.index(line)));
+    fmt::print(" -> ");
+    vector<std::string> temp;
+    for (auto w : g.adj(st.index(line)))
+      temp.push_back(st.name(w));
+    fmt::println("{}", temp);
+  }
 }

@@ -8,5 +8,6 @@ target_sources(
         FILE_SET CXX_MODULES FILES
         algo_graph.cppm   
 )
+find_package(fmt REQUIRED)
 add_executable(${PROJECT_NAME} algo_graph_test.cc)
-target_link_libraries(${PROJECT_NAME} PRIVATE algo_graph)
+target_link_libraries(${PROJECT_NAME} PRIVATE algo_graph fmt::fmt)

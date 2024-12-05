@@ -28,6 +28,7 @@ public:
     initialize(v_read);
     unsigned int e_read;
     is >> e_read;
+    _e = e_read;
     for (unsigned int i = 0; i < e_read; i++) {
       unsigned int v, w;
       is >> v >> w;   // read a vertex and another vertex
@@ -472,4 +473,61 @@ private:
   map<string, unsigned int> _st{};
   vector<string> _keys{};
   Graph _graph;
-};;
+};
+
+// directed graph implementation
+export class Digraph {
+public:
+  // ctor with v is total vertex
+  explicit Digraph(unsigned int v) : _v(v) {
+    _adj.resize(v);
+  }
+  // read the digraph from input stream
+  explicit Digraph(std::istream &is) {
+    unsigned vertex,edge; // total vertex to read and it's edge
+    is >> vertex >> edge;
+    _adj.resize(vertex);
+    _v = vertex;
+    _e = edge;
+    unsigned int v,w;
+    for (unsigned int i = 0; i < edge; i++) {
+      is >> v >> w;
+      add_edge(v, w);
+    }
+  }
+  // return total vertex
+  [[nodiscard]] unsigned int vertex_length()const{return _v;}
+  // return total edge
+  [[nodiscard]] unsigned int edge_length()const{return _e;}
+  // reverse the structure corresponding to the book
+  void reverse_order() {
+    for (unsigned int i = 0; i < _v; i++)
+      std::reverse(_adj[i].begin(), _adj[i].end());
+  }
+  [[nodiscard]] vector<unsigned int> adj(unsigned int v)const {
+    return _adj[v];
+  }
+  // reverse of this graph
+  [[nodiscard]] Digraph reverse()const { // example v point to w, now w point to v
+    auto dr = Digraph(_v);
+    for (unsigned int i = 0; i < _v; i++)
+      for (auto w : _adj[i])
+        dr.add_edge(w,i);
+    return dr;
+  }
+  // add edge given vertex v and w or connect v to w
+  void add_edge(unsigned int v, unsigned int w) {
+    if (v >= _v || w >= _v)
+      bad_input();
+    _adj[v].push_back(w); // the connecting process is only one time
+    ++_e;
+  }
+private:
+  unsigned int _v = 0; // vertex and edge
+  unsigned int _e = 0;
+  adj_list _adj; // adjacency list representation
+  void bad_input() const {
+    throw std::runtime_error("Input is not a valid graph, max: "
+      + std::to_string(_v));
+  }
+};

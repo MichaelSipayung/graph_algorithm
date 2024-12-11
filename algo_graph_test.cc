@@ -2,6 +2,7 @@ import <vector>;
 import <utility>;
 import <iostream>;
 import <sstream>;
+import <stack>;
 import algo_graph;
 #include <fmt/core.h>
 #include <fmt/ranges.h>
@@ -31,6 +32,8 @@ void test_symbol_table(const std::string &, char sp = ' ');
 void test_reachability(const Digraph &d, const vector<unsigned int> &s);
 
 void test_reachability(const Digraph &d, unsigned int s);
+
+void test_directed_cycle(const Digraph &data);
 
 int main()
 {
@@ -102,6 +105,8 @@ int main()
     test_reachability(dg, 8);
     fmt::print("source [1 2 6] : ");
     test_reachability(dg, {1, 2, 6});
+
+    test_directed_cycle(dg); // has cycle return nil means digraph is DAG
     return 0;
 }
 
@@ -193,4 +198,13 @@ void test_reachability(const Digraph &d, unsigned int s)
         if (reachable.marked(i))
             fmt::print("{} ", i);
     fmt::println("");
+}
+
+void test_directed_cycle(const Digraph &data)
+{
+    const auto dr_cycle = DirectedCycle(data);
+    if (dr_cycle.has_cycle())
+        fmt::println("directed cycle : {} ", dr_cycle.cycle());
+    else
+        fmt::println("no cycle on digraph or digraph is DAG");
 }

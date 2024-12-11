@@ -683,3 +683,47 @@ export class DirectedDFS
                 dfs(digraph, w); // not marked the adjacency list, call dfs recursively
     }
 };
+
+// DirectedCycle: interface for finding directed cycle on a digraph using dfs
+export class DirectedCycle
+{
+public:
+    explicit DirectedCycle(const Digraph &digraph)
+    {
+        _on_stack.resize(digraph.vertex_length());
+        _edge_to.resize(digraph.vertex_length());
+        _marked.resize(digraph.vertex_length());
+        for (unsigned int i = 0; i < digraph.vertex_length(); i++)
+            if (!_marked[i])
+                dfs(digraph,i);
+    }
+    [[nodiscard]] bool has_cycle() const{return !_cycle.empty();}
+    [[nodiscard]] auto cycle() const{return _cycle;}
+private:
+    vector<bool> _marked;
+    vector<unsigned int> _edge_to;
+    std::stack<unsigned int> _cycle; // vertices on a cycle (if one exist)
+    vector<bool> _on_stack; // vertices on recursive call stack
+    void dfs(const Digraph &digraph, unsigned int v)
+    {
+        _on_stack[v] = true;
+        _marked[v] = true;
+        for (auto w : digraph.adj(v))
+        {
+            if (has_cycle()){ return; }
+            else if (!_marked[w])
+            {
+                _edge_to[w] = v;
+                dfs(digraph, w);
+            }
+            else if (_on_stack[w])
+            {
+                for (unsigned x = v; x !=w; x = _edge_to[x])
+                    _cycle.push(x);
+                _cycle.push(w);
+                _cycle.push(v); // back to the head, this is cycled
+            }
+        }
+        _on_stack[v] = false;
+    }
+};

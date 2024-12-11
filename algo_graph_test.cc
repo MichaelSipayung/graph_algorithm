@@ -3,6 +3,7 @@ import <utility>;
 import <iostream>;
 import <sstream>;
 import <stack>;
+import <queue>;
 import algo_graph;
 #include <fmt/core.h>
 #include <fmt/ranges.h>
@@ -35,6 +36,7 @@ void test_reachability(const Digraph &d, unsigned int s);
 
 void test_directed_cycle(const Digraph &data);
 
+void test_depth_first_order(const Digraph &data);
 int main()
 {
     std::cout << "input the data ... " << std::endl;
@@ -107,6 +109,7 @@ int main()
     test_reachability(dg, {1, 2, 6});
 
     test_directed_cycle(dg); // has cycle return nil means digraph is DAG
+    test_depth_first_order(dg);
     return 0;
 }
 
@@ -207,4 +210,13 @@ void test_directed_cycle(const Digraph &data)
         fmt::println("directed cycle : {} ", dr_cycle.cycle());
     else
         fmt::println("no cycle on digraph or digraph is DAG");
+}
+
+void test_depth_first_order(const Digraph &data)
+{
+    auto dfs_order = DepthFirstOrder(data);
+    fmt::println("depth ordering");
+    fmt::println("preorder : {}", dfs_order.pre_order());
+    fmt::println("postorder : {}", dfs_order.post_order());
+    fmt::println("reverse post ordering : {}", dfs_order.revers_post_order());
 }

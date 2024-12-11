@@ -687,7 +687,7 @@ export class DirectedDFS
 // DirectedCycle: interface for finding directed cycle on a digraph using dfs
 export class DirectedCycle
 {
-public:
+  public:
     explicit DirectedCycle(const Digraph &digraph)
     {
         _on_stack.resize(digraph.vertex_length());
@@ -695,22 +695,30 @@ public:
         _marked.resize(digraph.vertex_length());
         for (unsigned int i = 0; i < digraph.vertex_length(); i++)
             if (!_marked[i])
-                dfs(digraph,i);
+                dfs(digraph, i);
     }
-    [[nodiscard]] bool has_cycle() const{return !_cycle.empty();}
-    [[nodiscard]] auto cycle() const{return _cycle;}
-private:
+    [[nodiscard]] bool has_cycle() const
+    {
+        return !_cycle.empty();
+    }
+    [[nodiscard]] auto cycle() const
+    {
+        return _cycle;
+    }
+
+  private:
     vector<bool> _marked;
     vector<unsigned int> _edge_to;
     std::stack<unsigned int> _cycle; // vertices on a cycle (if one exist)
-    vector<bool> _on_stack; // vertices on recursive call stack
-    void dfs(const Digraph &digraph, unsigned int v)
+    vector<bool> _on_stack;          // vertices on recursive call stack
+    void dfs(const Digraph &digraph, const unsigned int v)
     {
-        _on_stack[v] = true;
+        _on_stack[v] = true; // set true on entry to dfs(g,v)
         _marked[v] = true;
         for (auto w : digraph.adj(v))
         {
-            if (has_cycle()){ return; }
+            if (has_cycle())
+                return;
             else if (!_marked[w])
             {
                 _edge_to[w] = v;
@@ -718,12 +726,56 @@ private:
             }
             else if (_on_stack[w])
             {
-                for (unsigned x = v; x !=w; x = _edge_to[x])
+                for (unsigned x = v; x != w; x = _edge_to[x])
                     _cycle.push(x);
                 _cycle.push(w);
                 _cycle.push(v); // back to the head, this is cycled
             }
         }
-        _on_stack[v] = false;
+        _on_stack[v] = false; // set false on exit
+    }
+};
+
+// DepthFirstOrder: depth first search vertex ordering in a digraph
+export class DepthFirstOrder
+{
+  public:
+    explicit DepthFirstOrder(const Digraph &digraph)
+    {
+        _marked.resize(digraph.vertex_length());
+        for (unsigned int i = 0; i < digraph.vertex_length(); i++)
+            if (!_marked[i])
+                dfs(digraph, i);
+    }
+    // return preorder ordering vertex
+    [[nodiscard]] auto pre_order() const
+    {
+        return _pre;
+    }
+    // ...post order ordering vertex
+    [[nodiscard]] auto post_order() const
+    {
+        return _post;
+    }
+    // return reverse post ordering vertex
+    [[nodiscard]] auto revers_post_order() const
+    {
+        return _reverse_post;
+    }
+
+  private:
+    queue<unsigned int> _pre;               // put the vertex on a queue before the recursive calls
+    queue<unsigned int> _post;              // put the vertex on a queue after the r... calls
+    std::stack<unsigned int> _reverse_post; // put ... stack after r... calls
+    vector<bool> _marked;
+    void dfs(const Digraph &digraph, const unsigned int v)
+    {
+        _pre.push(v);
+        _marked[v] = true;
+        for (const auto w : digraph.adj(v))
+            if (!_marked[w])
+                dfs(digraph, w);
+        _post.push(v);
+        _reverse_post.push(v);
     }
 };

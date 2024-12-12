@@ -25,40 +25,13 @@ export class Graph
     }
 
     // ctor require input from user
-    explicit Graph(std::istream &is)
-    {
-        unsigned int v_read = 0;
-        is >> v_read;
-        _v = v_read;
-        initialize(v_read);
-        unsigned int e_read;
-        is >> e_read;
-        _e = e_read;
-        for (unsigned int i = 0; i < e_read; i++)
-        {
-            unsigned int v, w;
-            is >> v >> w;   // read a vertex and another vertex
-            add_edge(v, w); // connecting them
-        }
-    }
+    explicit Graph(std::istream &is);
 
     // add edge v-w
-    void add_edge(unsigned int v, unsigned int w)
-    {
-        check_invalid_vertex(v, _v);
-        check_invalid_vertex(w, _v);
-        _adj[static_cast<adj_list::size_type>(v)].push_back(w); // add w to v's list
-        _adj[static_cast<adj_list::size_type>(w)].push_back(v); // add v to w's list
-        ++_e;
-    }
+    void add_edge(unsigned int v, unsigned int w);
 
     // reverse the order, assume the structure is equal to book
-    auto reverse_order()
-    {
-        for (auto i = 0; i < _adj.size(); i++)
-            std::reverse(_adj[static_cast<adj_list::size_type>(i)].begin(),
-                         _adj[static_cast<adj_list::size_type>(i)].end());
-    }
+    auto reverse_order();
 
     // check total vertex
     [[nodiscard]] constexpr auto vertex_length() const
@@ -72,13 +45,7 @@ export class Graph
         return _e;
     }
 
-    static auto degree(Graph const &g, const int v)
-    {
-        unsigned int deg = 0;
-        for ([[maybe_unused]] auto i : g.adj(v))
-            deg++;
-        return deg;
-    }
+    static unsigned int degree(Graph const &g, int v);
 
     // return array which adjacent to v
     [[nodiscard]] constexpr vector<unsigned int> adj(auto v) const
@@ -86,7 +53,7 @@ export class Graph
         return _adj[v];
     }
 
-    static constexpr auto max_degree(Graph const &g)
+    static constexpr unsigned int max_degree(Graph const &g)
     {
         unsigned int max_deg = 0;
         for (auto v = 0; v < g.vertex_length(); v++)
@@ -171,14 +138,7 @@ export class DepthFirstSearch
     vector<bool> _marked;
     unsigned int _count = 0;
 
-    void dfs(Graph const &g, unsigned int v)
-    {
-        _marked[static_cast<adj_list::size_type>(v)] = true;
-        _count++;
-        for (auto w : g.adj(v))
-            if (!_marked[static_cast<adj_list::size_type>(w)])
-                dfs(g, w);
-    }
+    void dfs(Graph const &g, unsigned int v);
 };
 
 // check whether given s as vertex is connected component on g
@@ -199,27 +159,9 @@ export void connected_dfs(Graph const &g, unsigned int s)
 export class DepthFirstPaths
 {
   public:
-    DepthFirstPaths(Graph const &g, unsigned int s) : _s{s}
-    {
-        check_input(s, g.vertex_length());
-        _marked.resize(g.vertex_length(), false);
-        _edge_to.resize(g.vertex_length());
-        dfs(g, s);
-    }
+    DepthFirstPaths(Graph const &g, unsigned int s);
 
-    void dfs(Graph const &g, unsigned int v)
-    {
-        _marked[static_cast<adj_list::size_type>(v)] = true;
-        for (auto w : g.adj(v))
-        {
-            if (!_marked[static_cast<adj_list::size_type>(w)])
-            {
-                // v-w was the edge used to access w for the first time
-                _edge_to[static_cast<adj_list::size_type>(w)] = v;
-                dfs(g, w);
-            }
-        }
-    }
+    void dfs(Graph const &g, unsigned int v);
 
     [[nodiscard]] bool has_path_to(unsigned int v) const
     {
@@ -227,22 +169,7 @@ export class DepthFirstPaths
     }
 
     // return the path to v
-    [[nodiscard]] auto path_to(unsigned int v) const
-    {
-        std::vector<unsigned int> temp;
-        if (!has_path_to(v))
-            return temp;
-        std::stack<unsigned int> path;
-        for (auto x = v; x != _s; x = _edge_to[static_cast<adj_list::size_type>(x)])
-            path.push(x);
-        path.push(_s);
-        while (!path.empty())
-        {
-            temp.push_back(path.top());
-            path.pop();
-        }
-        return temp;
-    }
+    [[nodiscard]] vector<unsigned> path_to(unsigned int v) const;
 
   private:
     vector<bool> _marked;          // has dfs been called for this vertex ?
@@ -287,57 +214,16 @@ export auto finding_path_test(Graph const &g, unsigned int s)
 class BreadthFirstPaths
 {
   public:
-    BreadthFirstPaths(Graph const &g, unsigned int s) : _s{s}
-    {
-        _marked.resize(g.vertex_length(), false);
-        _edge_to.resize(g.vertex_length());
-        bfs(g, s);
-    }
+    BreadthFirstPaths(Graph const &g, unsigned int s);
 
-    void bfs(Graph const &g, unsigned int s)
-    {
-        queue<unsigned int> q;
-        _marked[static_cast<adj_list::size_type>(s)] = true;
-        q.push(s);
-        while (!q.empty())
-        {
-            auto v = q.front();
-            q.pop();
-            for (auto w : g.adj(v))
-            {
-                if (!_marked[static_cast<adj_list::size_type>(w)])
-                {
-                    // save last edge on the shortest path
-                    _edge_to[static_cast<adj_list::size_type>(w)] = v;
-                    // mark it because path is known
-                    _marked[static_cast<adj_list::size_type>(w)] = true;
-                    q.push(w); // and add it to the queue
-                }
-            }
-        }
-    }
+    void bfs(Graph const &g, unsigned int s);
 
     [[nodiscard]] bool has_path_to(unsigned int v) const
     {
         return _marked[static_cast<adj_list::size_type>(v)];
     }
 
-    [[nodiscard]] auto path_to(unsigned int v) const
-    {
-        vector<unsigned int> temp;
-        if (!has_path_to(v))
-            return temp;
-        std::stack<unsigned int> path;
-        for (auto x = v; x != _s; x = _edge_to[static_cast<adj_list::size_type>(x)])
-            path.push(x);
-        path.push(_s);
-        while (!path.empty())
-        {
-            temp.push_back(path.top());
-            path.pop();
-        }
-        return temp;
-    }
+    [[nodiscard]] vector<unsigned> path_to(unsigned int v) const;
 
   private:
     std::vector<bool> _marked;
@@ -377,32 +263,11 @@ export auto finding_path_test_bfs(Graph const &g, unsigned int s)
 export class Connected_Components
 {
   public:
-    explicit Connected_Components(Graph const &g)
-    {
-        _marked.resize(g.vertex_length(), false);
-        _id.resize(g.vertex_length());
-        for (unsigned int v = 0; v < g.vertex_length(); v++)
-        {
-            if (!_marked[static_cast<adj_list::size_type>(v)])
-            {
-                dfs(g, static_cast<adj_list::size_type>(v));
-                _count++;
-            }
-        }
-    }
+    explicit Connected_Components(Graph const &g);
 
-    void dfs(const Graph &g, unsigned int v)
-    {
-        _marked[static_cast<adj_list::size_type>(v)] = true;
-        _id[static_cast<adj_list::size_type>(v)] = _count;
-        for (auto w : g.adj(v))
-        {
-            if (!_marked[static_cast<adj_list::size_type>(w)])
-                dfs(g, w);
-        }
-    }
+    void dfs(const Graph &g, unsigned int v);
 
-    auto connected(unsigned int v, unsigned int w) const
+    [[nodiscard]] auto connected(unsigned int v, unsigned int w) const
     {
         return _id[static_cast<adj_list::size_type>(v)] == _id[static_cast<adj_list::size_type>(w)];
     }
@@ -427,25 +292,9 @@ export class Connected_Components
 export class Cycle
 {
   public:
-    explicit Cycle(Graph const &g)
-    {
-        _marked.resize(g.vertex_length(), false);
-        for (unsigned int v = 0; v < g.vertex_length(); v++)
-            if (!_marked[static_cast<adj_list::size_type>(v)])
-                dfs(g, v, v);
-    }
+    explicit Cycle(Graph const &g);
 
-    void dfs(Graph const &g, unsigned int v, unsigned int u)
-    {
-        _marked[static_cast<adj_list::size_type>(v)] = true;
-        for (auto w : g.adj(v))
-        {
-            if (!_marked[static_cast<adj_list::size_type>(w)])
-                dfs(g, w, v);
-            else if (w != u) // the adjacent vertex w is not the parent vertex u
-                _has_cycle = true;
-        }
-    }
+    void dfs(Graph const &g, unsigned int v, unsigned int u);
 
     [[nodiscard]] auto has_cycle() const
     {
@@ -461,32 +310,10 @@ export class Cycle
 export class TwoColor
 {
   public:
-    explicit TwoColor(Graph const &g)
-    {
-        _marked.resize(g.vertex_length(), false);
-        _color.resize(g.vertex_length());
-        for (unsigned int v = 0; v < g.vertex_length(); v++)
-            if (!_marked[static_cast<adj_list::size_type>(v)])
-                dfs(g, v);
-    }
+    explicit TwoColor(Graph const &g);
 
     // run dfs with additional step, coloring and checking the color
-    void dfs(Graph const &g, unsigned int v)
-    {
-        _marked[static_cast<adj_list::size_type>(v)] = true;
-        for (auto w : g.adj(v))
-        {
-            if (!_marked[static_cast<adj_list::size_type>(w)])
-            {
-                _color[static_cast<adj_list::size_type>(w)] = !_color[static_cast<adj_list::size_type>(v)];
-                dfs(g, w);
-            }
-            else if (_color[static_cast<adj_list::size_type>(w)] == _color[static_cast<adj_list::size_type>(v)])
-            {
-                _is_two_colorable = false;
-            }
-        }
-    }
+    void dfs(Graph const &g, unsigned int v);
 
     // check if given graph is bipartite
     [[nodiscard]] auto is_bipartite() const
@@ -504,48 +331,7 @@ export class TwoColor
 export class SymbolGraph
 {
   public:
-    explicit SymbolGraph(const string &filename, char sp = ' ') : _graph(0)
-    {
-        std::fstream file(filename, std::ios::in);
-        if (!file.is_open())
-            throw std::runtime_error("Could not open file " + filename);
-        string line, first_line, second_line;
-        vector<string> a = {" ", " "};
-        while (std::getline(file, line))
-        { // first pass, build the index
-            auto pos = line.find_first_of(sp);
-            first_line = line.substr(0, pos);
-            second_line = line.substr(pos + 1);
-            a[0] = first_line;
-            a[1] = second_line;
-            for (const auto &s : a)
-                if (_st.find(s) == _st.end())
-                    _st[s] = _st.size();
-        }
-        // inverted index to get string keys
-        _keys.resize(_st.size());
-        for (const auto &k : _st)
-        {
-            _keys[k.second] = k.first;
-        }
-        // second pass, build the graph, by connecting the first vertex
-        // on each line to all the others
-        file.close();
-        file.open(filename, std::ios::in);
-        _graph = Graph(_st.size());
-        while (std::getline(file, line))
-        {
-            auto pos = line.find_first_of(sp);
-            first_line = line.substr(0, pos);
-            second_line = line.substr(pos + 1);
-            a[0] = first_line;
-            a[1] = second_line;
-            unsigned int v = _st[first_line];
-            for (unsigned int i = 1; i < a.size(); i++)
-                _graph.add_edge(v, _st[a[i]]);
-        }
-        file.close();
-    }
+    explicit SymbolGraph(const string &filename, char sp = ' ');
 
     // check whether symbol table contains s
     [[nodiscard]] bool contains(const string &s) const
@@ -587,19 +373,7 @@ export class Digraph
         _adj.resize(v);
     }
     // read the digraph from input stream
-    explicit Digraph(std::istream &is)
-    {
-        unsigned vertex, edge; // total vertex to read and it's edge
-        is >> vertex >> edge;
-        _adj.resize(vertex);
-        _v = vertex;
-        unsigned int v, w;
-        for (unsigned int i = 0; i < edge; i++)
-        {
-            is >> v >> w;
-            add_edge(v, w);
-        }
-    }
+    explicit Digraph(std::istream &is);
     // return total vertex
     [[nodiscard]] unsigned int vertex_length() const
     {
@@ -611,32 +385,15 @@ export class Digraph
         return _e;
     }
     // reverse the structure corresponding to the book
-    void reverse_order()
-    {
-        for (unsigned int i = 0; i < _v; i++)
-            std::reverse(_adj[i].begin(), _adj[i].end());
-    }
+    void reverse_order();
     [[nodiscard]] vector<unsigned int> adj(unsigned int v) const
     {
         return _adj[v];
     }
     // reverse of this graph
-    [[nodiscard]] Digraph reverse() const
-    { // example v point to w, now w point to v
-        auto dr = Digraph(_v);
-        for (unsigned int i = 0; i < _v; i++)
-            for (auto w : _adj[i])
-                dr.add_edge(w, i);
-        return dr;
-    }
+    [[nodiscard]] Digraph reverse() const;
     // add edge given vertex v and w or connect v to w
-    void add_edge(unsigned int v, unsigned int w)
-    {
-        if (v >= _v || w >= _v)
-            bad_input();
-        _adj[v].push_back(w); // the connecting process is only one time
-        ++_e;
-    }
+    void add_edge(unsigned int v, unsigned int w);
 
   private:
     unsigned int _v = 0; // vertex and edge
@@ -659,13 +416,7 @@ export class DirectedDFS
         dfs(digraph, s);
     }
     // ctor with digraph and given list of sources
-    DirectedDFS(const Digraph &digraph, const vector<unsigned int> &s)
-    {
-        _marked.resize(digraph.vertex_length());
-        for (auto v : s)
-            if (!_marked[v])
-                dfs(digraph, v);
-    }
+    DirectedDFS(const Digraph &digraph, const vector<unsigned int> &s);
     // check if v is marked
     [[nodiscard]] bool marked(unsigned int v) const
     {
@@ -675,28 +426,14 @@ export class DirectedDFS
   private:
     vector<bool> _marked;
     // run depth first search for processing the graph
-    void dfs(const Digraph &digraph, unsigned int v)
-    {
-        _marked[v] = true;
-        for (auto w : digraph.adj(v))
-            if (!_marked[w])
-                dfs(digraph, w); // not marked the adjacency list, call dfs recursively
-    }
+    void dfs(const Digraph &digraph, unsigned int v);
 };
 
 // DirectedCycle: interface for finding directed cycle on a digraph using dfs
 export class DirectedCycle
 {
   public:
-    explicit DirectedCycle(const Digraph &digraph)
-    {
-        _on_stack.resize(digraph.vertex_length());
-        _edge_to.resize(digraph.vertex_length());
-        _marked.resize(digraph.vertex_length());
-        for (unsigned int i = 0; i < digraph.vertex_length(); i++)
-            if (!_marked[i])
-                dfs(digraph, i);
-    }
+    explicit DirectedCycle(const Digraph &digraph);
     [[nodiscard]] bool has_cycle() const
     {
         return !_cycle.empty();
@@ -711,42 +448,14 @@ export class DirectedCycle
     vector<unsigned int> _edge_to;
     std::stack<unsigned int> _cycle; // vertices on a cycle (if one exist)
     vector<bool> _on_stack;          // vertices on recursive call stack
-    void dfs(const Digraph &digraph, const unsigned int v)
-    {
-        _on_stack[v] = true; // set true on entry to dfs(g,v)
-        _marked[v] = true;
-        for (auto w : digraph.adj(v))
-        {
-            if (has_cycle())
-                return;
-            else if (!_marked[w])
-            {
-                _edge_to[w] = v;
-                dfs(digraph, w);
-            }
-            else if (_on_stack[w])
-            {
-                for (unsigned x = v; x != w; x = _edge_to[x])
-                    _cycle.push(x);
-                _cycle.push(w);
-                _cycle.push(v); // back to the head, this is cycled
-            }
-        }
-        _on_stack[v] = false; // set false on exit
-    }
+    void dfs(const Digraph &digraph, unsigned int v);
 };
 
 // DepthFirstOrder: depth first search vertex ordering in a digraph
 export class DepthFirstOrder
 {
   public:
-    explicit DepthFirstOrder(const Digraph &digraph)
-    {
-        _marked.resize(digraph.vertex_length());
-        for (unsigned int i = 0; i < digraph.vertex_length(); i++)
-            if (!_marked[i])
-                dfs(digraph, i);
-    }
+    explicit DepthFirstOrder(const Digraph &digraph);
     // return preorder ordering vertex
     [[nodiscard]] auto pre_order() const
     {
@@ -758,7 +467,7 @@ export class DepthFirstOrder
         return _post;
     }
     // return reverse post ordering vertex
-    [[nodiscard]] auto revers_post_order() const
+    [[nodiscard]] auto reverse_post_order() const
     {
         return _reverse_post;
     }
@@ -768,14 +477,414 @@ export class DepthFirstOrder
     queue<unsigned int> _post;              // put the vertex on a queue after the r... calls
     std::stack<unsigned int> _reverse_post; // put ... stack after r... calls
     vector<bool> _marked;
-    void dfs(const Digraph &digraph, const unsigned int v)
-    {
-        _pre.push(v);
-        _marked[v] = true;
-        for (const auto w : digraph.adj(v))
-            if (!_marked[w])
-                dfs(digraph, w);
-        _post.push(v);
-        _reverse_post.push(v);
-    }
+    void dfs(const Digraph &digraph, unsigned int v);
 };
+
+// Topological sort: topological order for directed acyclic graph (DAG)
+export class Topological
+{
+  public:
+    explicit Topological(const Digraph &digraph);
+    [[nodiscard]] auto order() const // return topological order
+    {
+        return _order;
+    }
+    [[nodiscard]] auto is_dag() const // check if the graph is DAG
+    {
+        return !_order.empty();
+    }
+
+  private:
+    std::stack<unsigned int> _order;
+};
+
+// Kosaraju's algorithm: computing connected components in digraph
+export class KosarajuSCC
+{
+  public:
+    explicit KosarajuSCC(const Digraph &digraph);
+    [[nodiscard]] auto strongly_connected(const unsigned int v, const unsigned int w) const
+    {
+        return _id[v] == _id[w];
+    }
+    [[nodiscard]] auto id(const unsigned int v) const
+    {
+        return _id[v];
+    }
+    [[nodiscard]] auto count() const
+    {
+        return _count;
+    }
+    [[nodiscard]] auto identifiers() const
+    {
+        return _id;
+    }
+
+  private:
+    vector<bool> _marked;     // reached vertices
+    vector<unsigned int> _id; // components identifiers
+    unsigned int _count = 0;  // number of strong components
+    void dfs(const Digraph &digraph, unsigned int v);
+};
+Graph::Graph(std::istream &is)
+{
+    unsigned int v_read = 0;
+    is >> v_read;
+    _v = v_read;
+    initialize(v_read);
+    unsigned int e_read;
+    is >> e_read;
+    _e = e_read;
+    for (unsigned int i = 0; i < e_read; i++)
+    {
+        unsigned int v, w;
+        is >> v >> w;   // read a vertex and another vertex
+        add_edge(v, w); // connecting them
+    }
+}
+void Graph::add_edge(unsigned int v, unsigned int w)
+{
+    check_invalid_vertex(v, _v);
+    check_invalid_vertex(w, _v);
+    _adj[static_cast<adj_list::size_type>(v)].push_back(w); // add w to v's list
+    _adj[static_cast<adj_list::size_type>(w)].push_back(v); // add v to w's list
+    ++_e;
+}
+auto Graph::reverse_order()
+{
+    for (auto i = 0; i < _adj.size(); i++)
+        std::reverse(_adj[static_cast<adj_list::size_type>(i)].begin(),
+                     _adj[static_cast<adj_list::size_type>(i)].end());
+}
+unsigned int Graph::degree(Graph const &g, const int v)
+{
+    unsigned int deg = 0;
+    for ([[maybe_unused]] auto i : g.adj(v))
+        deg++;
+    return deg;
+}
+void DepthFirstSearch::dfs(Graph const &g, unsigned int v)
+{
+    _marked[static_cast<adj_list::size_type>(v)] = true;
+    _count++;
+    for (auto w : g.adj(v))
+        if (!_marked[static_cast<adj_list::size_type>(w)])
+            dfs(g, w);
+}
+DepthFirstPaths::DepthFirstPaths(Graph const &g, unsigned int s) : _s{s}
+{
+    check_input(s, g.vertex_length());
+    _marked.resize(g.vertex_length(), false);
+    _edge_to.resize(g.vertex_length());
+    dfs(g, s);
+}
+void DepthFirstPaths::dfs(Graph const &g, unsigned int v)
+{
+    _marked[static_cast<adj_list::size_type>(v)] = true;
+    for (auto w : g.adj(v))
+    {
+        if (!_marked[static_cast<adj_list::size_type>(w)])
+        {
+            // v-w was the edge used to access w for the first time
+            _edge_to[static_cast<adj_list::size_type>(w)] = v;
+            dfs(g, w);
+        }
+    }
+}
+vector<unsigned> DepthFirstPaths::path_to(unsigned int v) const
+{
+    std::vector<unsigned int> temp;
+    if (!has_path_to(v))
+        return temp;
+    std::stack<unsigned int> path;
+    for (auto x = v; x != _s; x = _edge_to[static_cast<adj_list::size_type>(x)])
+        path.push(x);
+    path.push(_s);
+    while (!path.empty())
+    {
+        temp.push_back(path.top());
+        path.pop();
+    }
+    return temp;
+}
+BreadthFirstPaths::BreadthFirstPaths(Graph const &g, unsigned int s) : _s{s}
+{
+    _marked.resize(g.vertex_length(), false);
+    _edge_to.resize(g.vertex_length());
+    bfs(g, s);
+}
+void BreadthFirstPaths::bfs(Graph const &g, unsigned int s)
+{
+    queue<unsigned int> q;
+    _marked[static_cast<adj_list::size_type>(s)] = true;
+    q.push(s);
+    while (!q.empty())
+    {
+        auto v = q.front();
+        q.pop();
+        for (auto w : g.adj(v))
+        {
+            if (!_marked[static_cast<adj_list::size_type>(w)])
+            {
+                // save last edge on the shortest path
+                _edge_to[static_cast<adj_list::size_type>(w)] = v;
+                // mark it because path is known
+                _marked[static_cast<adj_list::size_type>(w)] = true;
+                q.push(w); // and add it to the queue
+            }
+        }
+    }
+}
+vector<unsigned> BreadthFirstPaths::path_to(unsigned int v) const
+{
+    vector<unsigned int> temp;
+    if (!has_path_to(v))
+        return temp;
+    std::stack<unsigned int> path;
+    for (auto x = v; x != _s; x = _edge_to[static_cast<adj_list::size_type>(x)])
+        path.push(x);
+    path.push(_s);
+    while (!path.empty())
+    {
+        temp.push_back(path.top());
+        path.pop();
+    }
+    return temp;
+}
+Connected_Components::Connected_Components(Graph const &g)
+{
+    _marked.resize(g.vertex_length(), false);
+    _id.resize(g.vertex_length());
+    for (unsigned int v = 0; v < g.vertex_length(); v++)
+    {
+        if (!_marked[static_cast<adj_list::size_type>(v)])
+        {
+            dfs(g, static_cast<adj_list::size_type>(v));
+            _count++;
+        }
+    }
+}
+void Connected_Components::dfs(const Graph &g, unsigned int v)
+{
+    _marked[static_cast<adj_list::size_type>(v)] = true;
+    _id[static_cast<adj_list::size_type>(v)] = _count;
+    for (auto w : g.adj(v))
+    {
+        if (!_marked[static_cast<adj_list::size_type>(w)])
+            dfs(g, w);
+    }
+}
+Cycle::Cycle(Graph const &g)
+{
+    _marked.resize(g.vertex_length(), false);
+    for (unsigned int v = 0; v < g.vertex_length(); v++)
+        if (!_marked[static_cast<adj_list::size_type>(v)])
+            dfs(g, v, v);
+}
+void Cycle::dfs(Graph const &g, unsigned int v, unsigned int u)
+{
+    _marked[static_cast<adj_list::size_type>(v)] = true;
+    for (auto w : g.adj(v))
+    {
+        if (!_marked[static_cast<adj_list::size_type>(w)])
+            dfs(g, w, v);
+        else if (w != u) // the adjacent vertex w is not the parent vertex u
+            _has_cycle = true;
+    }
+}
+TwoColor::TwoColor(Graph const &g)
+{
+    _marked.resize(g.vertex_length(), false);
+    _color.resize(g.vertex_length());
+    for (unsigned int v = 0; v < g.vertex_length(); v++)
+        if (!_marked[static_cast<adj_list::size_type>(v)])
+            dfs(g, v);
+}
+void TwoColor::dfs(Graph const &g, unsigned int v)
+{
+    _marked[static_cast<adj_list::size_type>(v)] = true;
+    for (auto w : g.adj(v))
+    {
+        if (!_marked[static_cast<adj_list::size_type>(w)])
+        {
+            _color[static_cast<adj_list::size_type>(w)] = !_color[static_cast<adj_list::size_type>(v)];
+            dfs(g, w);
+        }
+        else if (_color[static_cast<adj_list::size_type>(w)] == _color[static_cast<adj_list::size_type>(v)])
+        {
+            _is_two_colorable = false;
+        }
+    }
+}
+SymbolGraph::SymbolGraph(const string &filename, char sp) : _graph(0)
+{
+    std::fstream file(filename, std::ios::in);
+    if (!file.is_open())
+        throw std::runtime_error("Could not open file " + filename);
+    string line, first_line, second_line;
+    vector<string> a = {" ", " "};
+    while (std::getline(file, line))
+    { // first pass, build the index
+        auto pos = line.find_first_of(sp);
+        first_line = line.substr(0, pos);
+        second_line = line.substr(pos + 1);
+        a[0] = first_line;
+        a[1] = second_line;
+        for (const auto &s : a)
+            if (_st.find(s) == _st.end())
+                _st[s] = _st.size();
+    }
+    // inverted index to get string keys
+    _keys.resize(_st.size());
+    for (const auto &k : _st)
+    {
+        _keys[k.second] = k.first;
+    }
+    // second pass, build the graph, by connecting the first vertex
+    // on each line to all the others
+    file.close();
+    file.open(filename, std::ios::in);
+    _graph = Graph(_st.size());
+    while (std::getline(file, line))
+    {
+        auto pos = line.find_first_of(sp);
+        first_line = line.substr(0, pos);
+        second_line = line.substr(pos + 1);
+        a[0] = first_line;
+        a[1] = second_line;
+        unsigned int v = _st[first_line];
+        for (unsigned int i = 1; i < a.size(); i++)
+            _graph.add_edge(v, _st[a[i]]);
+    }
+    file.close();
+}
+Digraph::Digraph(std::istream &is)
+{
+    unsigned vertex, edge; // total vertex to read and it's edge
+    is >> vertex >> edge;
+    _adj.resize(vertex);
+    _v = vertex;
+    unsigned int v, w;
+    for (unsigned int i = 0; i < edge; i++)
+    {
+        is >> v >> w;
+        add_edge(v, w);
+    }
+}
+void Digraph::reverse_order()
+{
+    for (unsigned int i = 0; i < _v; i++)
+        std::reverse(_adj[i].begin(), _adj[i].end());
+}
+Digraph Digraph::reverse() const
+{ // example v point to w, now w point to v
+    auto dr = Digraph(_v);
+    for (unsigned int i = 0; i < _v; i++)
+        for (const auto w : _adj[i])
+            dr.add_edge(w, i);
+    return dr;
+}
+void Digraph::add_edge(unsigned int v, unsigned int w)
+{
+    if (v >= _v || w >= _v)
+        bad_input();
+    _adj[v].push_back(w); // the connecting process is only one time
+    ++_e;
+}
+DirectedDFS::DirectedDFS(const Digraph &digraph, const vector<unsigned int> &s)
+{
+    _marked.resize(digraph.vertex_length());
+    for (auto v : s)
+        if (!_marked[v])
+            dfs(digraph, v);
+}
+void DirectedDFS::dfs(const Digraph &digraph, unsigned int v)
+{
+    _marked[v] = true;
+    for (auto w : digraph.adj(v))
+        if (!_marked[w])
+            dfs(digraph, w); // not marked the adjacency list, call dfs recursively
+}
+DirectedCycle::DirectedCycle(const Digraph &digraph)
+{
+    _on_stack.resize(digraph.vertex_length());
+    _edge_to.resize(digraph.vertex_length());
+    _marked.resize(digraph.vertex_length());
+    for (unsigned int i = 0; i < digraph.vertex_length(); i++)
+        if (!_marked[i])
+            dfs(digraph, i);
+}
+void DirectedCycle::dfs(const Digraph &digraph, const unsigned int v)
+{
+    _on_stack[v] = true; // set true on entry to dfs(g,v)
+    _marked[v] = true;
+    for (auto w : digraph.adj(v))
+    {
+        if (has_cycle())
+            return;
+        else if (!_marked[w])
+        {
+            _edge_to[w] = v;
+            dfs(digraph, w);
+        }
+        else if (_on_stack[w])
+        {
+            for (unsigned x = v; x != w; x = _edge_to[x])
+                _cycle.push(x);
+            _cycle.push(w);
+            _cycle.push(v); // back to the head, this is cycled
+        }
+    }
+    _on_stack[v] = false; // set false on exit
+}
+DepthFirstOrder::DepthFirstOrder(const Digraph &digraph)
+{
+    _marked.resize(digraph.vertex_length());
+    for (unsigned int i = 0; i < digraph.vertex_length(); i++)
+        if (!_marked[i])
+            dfs(digraph, i);
+}
+void DepthFirstOrder::dfs(const Digraph &digraph, const unsigned int v)
+{
+    _pre.push(v);
+    _marked[v] = true;
+    for (const auto w : digraph.adj(v))
+        if (!_marked[w])
+            dfs(digraph, w);
+    _post.push(v);
+    _reverse_post.push(v);
+}
+Topological::Topological(const Digraph &digraph)
+{
+    if (const auto cycle_finder = DirectedCycle(digraph); !cycle_finder.has_cycle())
+    {
+        const auto dfs = DepthFirstOrder(digraph);
+        _order = dfs.reverse_post_order();
+    }
+}
+KosarajuSCC::KosarajuSCC(const Digraph &digraph)
+{
+    _marked.resize(digraph.vertex_length());
+    _id.resize(digraph.vertex_length());
+    auto order = DepthFirstOrder(digraph.reverse()).reverse_post_order();
+    vector<unsigned int> temp;
+    while (!order.empty())
+    {
+        temp.push_back(order.top());
+        order.pop();
+    }
+    for (const auto w : temp)
+        if (!_marked[w])
+        {
+            dfs(digraph, w);
+            _count++;
+        }
+}
+void KosarajuSCC::dfs(const Digraph &digraph, const unsigned int v)
+{
+    _marked[v] = true;
+    _id[v] = _count;
+    for (const auto w : digraph.adj(v))
+        if (!_marked[w])
+            dfs(digraph, w);
+}

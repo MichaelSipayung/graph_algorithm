@@ -37,6 +37,16 @@ void test_reachability(const Digraph &d, unsigned int s);
 void test_directed_cycle(const Digraph &data);
 
 void test_depth_first_order(const Digraph &data);
+
+void test_topological_order(const Digraph &data);
+
+void test_strong_components_simple(const Digraph &data, unsigned int v, unsigned int w);
+
+void test_total_strong_components(const Digraph &data);
+
+void test_total_strong_components_dag(const Digraph &data);
+
+void test_show_strong_components(const Digraph &data);
 int main()
 {
     std::cout << "input the data ... " << std::endl;
@@ -109,14 +119,30 @@ int main()
     test_reachability(dg, {1, 2, 6});
 
     test_directed_cycle(dg); // has cycle return nil means digraph is DAG
-    test_depth_first_order(dg);
+    std::istringstream digraphsample2("13 15\n0 6\n 0 1\n 0 5\n"
+                                      "2 3\n 2 0\n 3 5\n 5 4\n 6 9\n 6 4\n 7 6\n"
+                                      "8 7\n 9 12\n 9 10\n 9 11\n 11 12\n");
+    Digraph dg2(digraphsample2);
+    dg2.reverse_order();
+    test_depth_first_order(dg2);
+    test_topological_order(dg2);
+
+    test_strong_components_simple(dg, 7, 8);
+    test_strong_components_simple(dg, 9, 12);
+    test_strong_components_simple(dg, 0, 1);
+    test_total_strong_components(dg);
+    test_total_strong_components_dag(dg2);
+
+    test_show_strong_components(dg);
+    test_show_strong_components(dg2);
+
     return 0;
 }
 
 void test_connected_components(const Graph &data)
 {
     cout << "test connected components" << endl;
-    auto cc = Connected_Components(data);
+    const auto cc = Connected_Components(data);
     // simple connectivity test
     cout << "is(0,3) connected components: " << cc.connected(0, 3) << endl;
     cout << "is(0,7) connected components: " << cc.connected(0, 7) << endl;
@@ -129,7 +155,7 @@ void test_connected_components_show(const Graph &data)
     cout << "show connected components" << endl;
     const auto cc = Connected_Components(data);
     vector<vector<unsigned int>> components;
-    auto count = cc.count();
+    const auto count = cc.count();
     components.resize(count);
     for (unsigned int i = 0; i < data.vertex_length(); i++)
         components[static_cast<adj_list::size_type>(cc.id(i))].push_back(i);
@@ -139,7 +165,7 @@ void test_connected_components_show(const Graph &data)
                      components[static_cast<adj_list::size_type>(i)].end());
     for (unsigned int i = 0; i < count; i++)
     {
-        for (auto v : components[static_cast<adj_list::size_type>(i)])
+        for (const auto v : components[static_cast<adj_list::size_type>(i)])
             cout << v << " ";
         cout << endl;
     }
@@ -164,7 +190,7 @@ void test_acyclic(Graph const &data)
 }
 void test_bipartite(Graph const &data)
 {
-    auto two_coloring = TwoColor(data);
+    const auto two_coloring = TwoColor(data);
     cout << "is bipartite graph: " << two_coloring.is_bipartite() << std::endl;
 }
 
@@ -187,7 +213,7 @@ void test_symbol_table(const std::string &file_name, const char sp)
 
 void test_reachability(const Digraph &d, const vector<unsigned int> &s)
 {
-    auto reachable = DirectedDFS(d, s);
+    const auto reachable = DirectedDFS(d, s);
     for (unsigned int i = 0; i < d.vertex_length(); i++)
         if (reachable.marked(i))
             fmt::print("{} ", i);
@@ -196,7 +222,7 @@ void test_reachability(const Digraph &d, const vector<unsigned int> &s)
 
 void test_reachability(const Digraph &d, unsigned int s)
 {
-    auto reachable = DirectedDFS(d, s);
+    const auto reachable = DirectedDFS(d, s);
     for (unsigned int i = 0; i < d.vertex_length(); i++)
         if (reachable.marked(i))
             fmt::print("{} ", i);
@@ -205,8 +231,7 @@ void test_reachability(const Digraph &d, unsigned int s)
 
 void test_directed_cycle(const Digraph &data)
 {
-    const auto dr_cycle = DirectedCycle(data);
-    if (dr_cycle.has_cycle())
+    if (const auto dr_cycle = DirectedCycle(data); dr_cycle.has_cycle())
         fmt::println("directed cycle : {} ", dr_cycle.cycle());
     else
         fmt::println("no cycle on digraph or digraph is DAG");
@@ -214,9 +239,65 @@ void test_directed_cycle(const Digraph &data)
 
 void test_depth_first_order(const Digraph &data)
 {
-    auto dfs_order = DepthFirstOrder(data);
+    const auto dfs_order = DepthFirstOrder(data);
     fmt::println("depth ordering");
     fmt::println("preorder : {}", dfs_order.pre_order());
     fmt::println("postorder : {}", dfs_order.post_order());
-    fmt::println("reverse post ordering : {}", dfs_order.revers_post_order());
+    auto col = dfs_order.reverse_post_order();
+    fmt::print("reverse post order : [ ");
+    while (!col.empty())
+    {
+        fmt::print("{} ", col.top());
+        col.pop();
+    }
+    fmt::println("]");
+    // fmt::println("reverse post ordering : {}", dfs_order.reverse_post_order());
+}
+
+void test_topological_order(const Digraph &data)
+{
+    if (const auto topological_order = Topological(data); topological_order.is_dag())
+        fmt::println("Topological order : {}", topological_order.order());
+    else
+        fmt::println("digraph is not DAG");
+}
+
+void test_strong_components_simple(const Digraph &data, unsigned int v, unsigned int w)
+{
+    if (const auto str = KosarajuSCC(data); str.strongly_connected(v, w))
+        fmt::println("strongly connected components v {}, w {}", v, w);
+    else
+        fmt::println("not strongly connected components");
+}
+
+void test_total_strong_components(const Digraph &data)
+{
+    if (const auto str = KosarajuSCC(data); str.count() != 0)
+        fmt::println("total strong components : {}", str.count());
+    else
+        fmt::println("strong components is nil");
+}
+
+void test_total_strong_components_dag(const Digraph &data)
+{
+    fmt::println("assume DAG, total strong components must be equal to : {}", data.vertex_length());
+    if (const auto str = KosarajuSCC(data); str.count() != 0)
+        fmt::println("total strong components : {}", str.count());
+    else
+        fmt::println("not strong components");
+}
+void test_show_strong_components(const Digraph &data)
+{
+    const auto str = KosarajuSCC(data);
+    vector<vector<unsigned int>> cc;
+    cc.resize(str.count());
+    for (auto i = 0; i < str.count(); i++)
+    {
+        for (auto j = 0; j < data.vertex_length(); j++)
+            if (str.id(j) == i)
+                cc[i].push_back(j);
+    }
+    fmt::println("{} components ", str.count());
+    for (auto &i : cc)
+        fmt::println("{} ", i); // print all strong components
 }

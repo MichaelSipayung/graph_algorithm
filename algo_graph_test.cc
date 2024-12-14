@@ -47,6 +47,8 @@ void test_total_strong_components(const Digraph &data);
 void test_total_strong_components_dag(const Digraph &data);
 
 void test_show_strong_components(const Digraph &data);
+
+void test_edge_weighted_graph();
 int main()
 {
     std::cout << "input the data ... " << std::endl;
@@ -136,6 +138,7 @@ int main()
     test_show_strong_components(dg);
     test_show_strong_components(dg2);
 
+    test_edge_weighted_graph();
     return 0;
 }
 
@@ -300,4 +303,56 @@ void test_show_strong_components(const Digraph &data)
     fmt::println("{} components ", str.count());
     for (auto &i : cc)
         fmt::println("{} ", i); // print all strong components
+}
+void test_edge_weighted_graph()
+{
+    auto edge_weight = EdgeWeightedGraph(8);
+    auto edge_sample = Edge(4,5,0.35);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(4,7,0.37);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(5,7,0.28);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(0,7,0.16);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(1,5,0.32);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(0,4,0.38);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(2,3,0.17);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(1,7,0.19);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(0,2,0.26);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(1,2,0.36);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(1,3,0.29);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(2,7,0.34);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(6,2,0.40);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(3,6,0.52);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(6,0,0.58);
+    edge_weight.add_edge(edge_sample);
+    edge_sample = Edge(6,4,0.93);
+    edge_weight.add_edge(edge_sample);
+    for (auto i =0; i < edge_weight.v(); i++)
+    {
+        for (auto item : edge_weight.adj(i))
+            fmt::print("[ {} | {} | {} ] -> ", item.either(), item.other(item.either()),
+                item.weight());
+        fmt::println("");
+    }
+    fmt::println("lazy prim ...");
+    // test lazy prim's MST
+    auto lzprim = LazyPrimMST(edge_weight);
+    auto tmp = lzprim.edges_to_vector();
+    for (auto item : tmp)
+        fmt::print("[{} {} {}] ", item.either(), item.other(item.either()), item.weight());
+    std::println();
+    fmt::println("MST weight : {}", lzprim.weight());
+    std::println("MST weight <println> : {}", lzprim.weight());
 }

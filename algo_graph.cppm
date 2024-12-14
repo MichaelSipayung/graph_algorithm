@@ -8,6 +8,7 @@ import <stack>;
 import <queue>;
 import <fstream>;
 import <map>;
+
 using std::map;
 using std::queue;
 using std::string;
@@ -887,4 +888,236 @@ void KosarajuSCC::dfs(const Digraph &digraph, const unsigned int v)
     for (const auto w : digraph.adj(v))
         if (!_marked[w])
             dfs(digraph, w);
+}
+
+// Edge: weighted edge data type implementation
+export class Edge
+{
+  public:
+    explicit Edge(const unsigned int v = 0, const unsigned int w = 0, const double weight = 0)
+        : _v(v), _w(w), _weight(weight)
+    {
+    }
+    [[nodiscard]] auto weight() const
+    {
+        return _weight;
+    }
+    [[nodiscard]] auto either() const
+    {
+        return _v;
+    }
+    [[nodiscard]] auto other(unsigned int vertex) const
+    {
+        if (vertex == _v)
+            return _w;
+        else if (vertex == _w)
+            return _v;
+        else
+            throw std::invalid_argument("Inconsistent edge");
+    }
+    friend bool operator<(const Edge &e1, const Edge &e2)
+    {
+        return e1._weight < e2._weight;
+    }
+
+  private:
+    unsigned int _v = 0;
+    unsigned int _w = 0;
+    double _weight = 0;
+};
+
+// EdgeWeightedGraph: Edge-Weighted graph data type
+export class EdgeWeightedGraph
+{
+  public:
+    explicit EdgeWeightedGraph(const unsigned int v) : _v(v)
+    {
+        _adj.resize(v);
+    }
+    [[nodiscard]] auto v() const
+    {
+        return _v;
+    }
+    [[nodiscard]] auto e() const
+    {
+        return _e;
+    }
+    void add_edge(const Edge &e);
+    [[nodiscard]] vector<Edge> adj(unsigned int v) const
+    {
+        return _adj[v];
+    }
+    [[nodiscard]] vector<Edge> edges() const;
+
+  private:
+    unsigned int _v = 0;       // number of vertices
+    unsigned int _e = 0;       // number of edges
+    vector<vector<Edge>> _adj; // adjacency list
+};
+
+void EdgeWeightedGraph::add_edge(const Edge &e)
+{
+    auto v = e.either();
+    auto w = e.other(v);
+    _adj[v].push_back(e);
+    _adj[w].push_back(e);
+    _e++;
+}
+// gathering all the edges in an edge weighted graph
+vector<Edge> EdgeWeightedGraph::edges() const
+{
+    vector<Edge> res;
+    for (auto i = 0; i < _v; i++)
+        for (Edge e : _adj[i])
+            if (e.other(i) > i)
+                res.push_back(e);
+    return res;
+}
+
+// BinaryHeap: priority queue implementation, for prim's algorithm
+export template <typename Comparable> class BinaryHeap
+{
+  public:
+    explicit BinaryHeap(unsigned int capacity = 100);
+    explicit BinaryHeap(const vector<Comparable> &items);
+    [[nodiscard]] bool is_empty() const;
+    const Comparable &find_min() const;
+    void insert(const Comparable &e);
+    void delete_min();
+    [[nodiscard]] unsigned int size()const {return _curr_size;};
+
+  private:
+    unsigned int _curr_size;   // the number of elements in heap
+    vector<Comparable> _array; // the heap array
+    void build_heap();
+    void percolate_down(unsigned int i);
+};
+template <typename Comparable> BinaryHeap<Comparable>::BinaryHeap(unsigned int capacity) : _curr_size(0)
+{
+    _array.resize(capacity);
+}
+template <typename Comparable>
+BinaryHeap<Comparable>::BinaryHeap(const vector<Comparable> &items)
+    : _curr_size(items.size()), _array(items.size() + 10)
+{
+    for (unsigned int i = 0; i < items.size(); i++)
+        _array[i + 1] = items[i];
+    build_heap();
+}
+template <typename Comparable> bool BinaryHeap<Comparable>::is_empty() const
+{
+    return _curr_size == 0;
+}
+template <typename Comparable> const Comparable &BinaryHeap<Comparable>::find_min() const
+{
+    if (is_empty())
+        throw std::invalid_argument("Heap is empty");
+    return _array[1];
+}
+template <typename Comparable> void BinaryHeap<Comparable>::insert(const Comparable &e)
+{
+    if (_curr_size == _array.size() - 1)
+        _array.resize(_array.size() * 2);
+    // percolate up
+    auto hole = ++_curr_size;
+    auto copy = e;
+    _array[0] = std::move(copy);
+    for (; e < _array[hole / 2]; hole /= 2)
+        _array[hole] = std::move(_array[hole / 2]);
+    _array[hole] = std::move(_array[0]);
+}
+template <typename Comparable> void BinaryHeap<Comparable>::delete_min()
+{
+    if (is_empty())
+        throw std::invalid_argument("Heap is empty");
+    _array[1] = std::move(_array[_curr_size--]);
+    percolate_down(1);
+}
+template <typename Comparable> void BinaryHeap<Comparable>::build_heap()
+{
+    for (unsigned int i = _curr_size / 2; i > 0; --i)
+        percolate_down(i);
+}
+template <typename Comparable> void BinaryHeap<Comparable>::percolate_down(unsigned int i)
+{
+    unsigned int child;
+    Comparable tmp = std::move(_array[i]);
+    for (; i * 2 <= _curr_size; i = child)
+    {
+        child = i * 2;
+        if (child != _curr_size && _array[child + 1] < _array[child])
+            ++child;
+        if (_array[child] < tmp)
+            _array[i] = std::move(_array[child]);
+        else
+            break;
+    }
+    _array[i] = std::move(tmp);
+}
+
+// Lazy version of Prim's MST algorithm
+export class LazyPrimMST
+{
+  public:
+    typedef BinaryHeap<Edge> Priority;
+    explicit LazyPrimMST(const EdgeWeightedGraph &g);
+    void visit(const EdgeWeightedGraph &g, unsigned int v);
+    [[nodiscard]] auto edges() const
+    {
+        return _mst;
+    }
+    [[nodiscard]] double weight() const;
+    [[nodiscard]] vector<Edge> edges_to_vector()const;
+  private:
+    vector<bool> _marked; // MST Vertices
+    queue<Edge> _mst;     // MST edges
+    Priority _pq;            // crossing (and  ineligible) edges
+};
+LazyPrimMST::LazyPrimMST(const EdgeWeightedGraph &g)
+{
+    _marked.resize(g.v());
+    visit(g, 0); // assume G is connected
+    while (!_pq.is_empty())
+    {
+        auto e = _pq.find_min(); // get the lowest weight edge from pq
+        _pq.delete_min();
+        const auto v = e.either();
+        const auto w = e.other(v);
+        if (_marked[v] && _marked[w])
+            continue; // skip if ineligible
+        _mst.push(e); // add edge to the tree
+        if (!_marked[v])
+            visit(g, v); // add vertex to tree
+        if (!_marked[w])
+            visit(g, w); // either v or w
+    }
+}
+void LazyPrimMST::visit(const EdgeWeightedGraph &g, const unsigned int v)
+{
+    // mark v and add to pq all edges from v to unmarked vertices
+    _marked[v] = true;
+    for (Edge e : g.adj(v))
+    {
+        if (!_marked[e.other(v)])
+            _pq.insert(e);
+    }
+}
+double LazyPrimMST::weight() const
+{
+    const auto vec = edges_to_vector();
+    auto sum =0.0;
+    for (const auto &e : vec)
+        sum+=e.weight();
+    return sum;
+}
+vector<Edge> LazyPrimMST::edges_to_vector() const
+{
+    auto mst = _mst;
+    vector<Edge> res;
+    while (!mst.empty())
+    {
+        res.push_back(mst.front());
+        mst.pop();
+    }
+    return res;
 }

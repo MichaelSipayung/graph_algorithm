@@ -1,5 +1,6 @@
 module;
 export module algo_graph;
+#include <assert.h>
 import <iostream>;
 import <vector>;
 import <istream>;
@@ -8,7 +9,9 @@ import <stack>;
 import <queue>;
 import <fstream>;
 import <map>;
-
+import <sstream>;
+import <unordered_map>;
+using std::unordered_map;
 using std::map;
 using std::queue;
 using std::string;
@@ -894,11 +897,11 @@ void KosarajuSCC::dfs(const Digraph &digraph, const unsigned int v)
 export class Edge
 {
   public:
-    explicit Edge(const unsigned int v = 0, const unsigned int w = 0, const double weight = 0)
+    explicit Edge(const unsigned int v = 0, const unsigned int w = 0, const double weight = 0.0)
         : _v(v), _w(w), _weight(weight)
     {
     }
-    [[nodiscard]] auto weight() const
+    [[nodiscard]] double weight() const
     {
         return _weight;
     }
@@ -906,7 +909,7 @@ export class Edge
     {
         return _v;
     }
-    [[nodiscard]] auto other(unsigned int vertex) const
+    [[nodiscard]] auto other(const unsigned int vertex) const
     {
         if (vertex == _v)
             return _w;
@@ -923,7 +926,7 @@ export class Edge
   private:
     unsigned int _v = 0;
     unsigned int _w = 0;
-    double _weight = 0;
+    double _weight = 0.0;
 };
 
 // EdgeWeightedGraph: Edge-Weighted graph data type
@@ -934,6 +937,8 @@ export class EdgeWeightedGraph
     {
         _adj.resize(v);
     }
+    explicit EdgeWeightedGraph(const std::string &filename);
+    // EdgeWeightedGraph convert_from_file();
     [[nodiscard]] auto v() const
     {
         return _v;
@@ -943,7 +948,7 @@ export class EdgeWeightedGraph
         return _e;
     }
     void add_edge(const Edge &e);
-    [[nodiscard]] vector<Edge> adj(unsigned int v) const
+    [[nodiscard]] vector<Edge> adj(const unsigned int v) const
     {
         return _adj[v];
     }
@@ -955,10 +960,38 @@ export class EdgeWeightedGraph
     vector<vector<Edge>> _adj; // adjacency list
 };
 
+// ctor: reading from edge weight from file
+EdgeWeightedGraph::EdgeWeightedGraph(const std::string &filename)
+{
+    std::fstream file(filename, std::ios::in);
+    if (!file.is_open())
+        throw std::invalid_argument("Could not open file");
+    unsigned int v, e;
+    auto base = 0;
+    std::string line;
+
+    std::getline(file, line);
+    std::istringstream vertex_edge(line); // read total vertex and total edge
+
+    vertex_edge >> v >> e;
+    _v = v; // bugs if _v is not assign
+    _adj.resize(v);
+    double weight = 0.0;
+    while (std::getline(file, line)) // get the next line
+    {
+        std::istringstream iss(line);
+        iss >> v >> e >> weight;     // read vertex,edge and weight
+        const Edge ed(v, e, weight); // store in edge pair
+        add_edge(ed);                // add it to adjacency list
+    }
+    file.close();
+}
 void EdgeWeightedGraph::add_edge(const Edge &e)
 {
-    auto v = e.either();
-    auto w = e.other(v);
+    const auto v = e.either();
+    const auto w = e.other(v);
+    if (v >= _adj.size() || w >= _adj.size())
+        throw std::invalid_argument("Inconsistent edge");
     _adj[v].push_back(e);
     _adj[w].push_back(e);
     _e++;
@@ -984,7 +1017,10 @@ export template <typename Comparable> class BinaryHeap
     const Comparable &find_min() const;
     void insert(const Comparable &e);
     void delete_min();
-    [[nodiscard]] unsigned int size()const {return _curr_size;};
+    [[nodiscard]] unsigned int size() const
+    {
+        return _curr_size;
+    };
 
   private:
     unsigned int _curr_size;   // the number of elements in heap
@@ -1061,17 +1097,21 @@ export class LazyPrimMST
   public:
     typedef BinaryHeap<Edge> Priority;
     explicit LazyPrimMST(const EdgeWeightedGraph &g);
-    void visit(const EdgeWeightedGraph &g, unsigned int v);
+    // return all edges from MST
     [[nodiscard]] auto edges() const
     {
         return _mst;
     }
+    // return total weight of MST
     [[nodiscard]] double weight() const;
-    [[nodiscard]] vector<Edge> edges_to_vector()const;
+    // convert the edges of MST to vector for convenience
+    [[nodiscard]] vector<Edge> edges_to_vector() const;
+
   private:
     vector<bool> _marked; // MST Vertices
     queue<Edge> _mst;     // MST edges
-    Priority _pq;            // crossing (and  ineligible) edges
+    Priority _pq;         // crossing (and  ineligible) edges
+    void visit(const EdgeWeightedGraph &g, unsigned int v);
 };
 LazyPrimMST::LazyPrimMST(const EdgeWeightedGraph &g)
 {
@@ -1096,7 +1136,7 @@ void LazyPrimMST::visit(const EdgeWeightedGraph &g, const unsigned int v)
 {
     // mark v and add to pq all edges from v to unmarked vertices
     _marked[v] = true;
-    for (Edge e : g.adj(v))
+    for (auto e : g.adj(v))
     {
         if (!_marked[e.other(v)])
             _pq.insert(e);
@@ -1105,9 +1145,9 @@ void LazyPrimMST::visit(const EdgeWeightedGraph &g, const unsigned int v)
 double LazyPrimMST::weight() const
 {
     const auto vec = edges_to_vector();
-    auto sum =0.0;
+    auto sum = 0.0;
     for (const auto &e : vec)
-        sum+=e.weight();
+        sum += e.weight();
     return sum;
 }
 vector<Edge> LazyPrimMST::edges_to_vector() const
@@ -1119,5 +1159,279 @@ vector<Edge> LazyPrimMST::edges_to_vector() const
         res.push_back(mst.front());
         mst.pop();
     }
+    return res;
+}
+
+// priority queue implementation with extra index
+export class IndexPriorityQueue
+{
+public:
+    typedef std::pair<unsigned int, double> index_pair;
+    explicit IndexPriorityQueue(const unsigned int capacity = 100)
+        : _curr_size(0)
+    {
+        _array.resize(capacity + 1); // +1 to accommodate 1-based indexing
+    }
+
+    [[nodiscard]] bool is_empty() const
+    {
+        return _curr_size == 0;
+    }
+
+    void insert(const index_pair &e);
+    [[nodiscard]] bool contain(unsigned index) const;
+    unsigned int delete_min();
+    void change(unsigned int index, const index_pair &e);
+    [[nodiscard]] auto curr_heap_structure()const
+    {
+        auto temp = decltype(_array)();
+        for (auto i=1; i<=_curr_size; ++i)
+            temp.push_back(_array[i]);
+        return temp;
+    }
+    [[nodiscard]] unsigned int size() const
+    {
+        return _curr_size;
+    }
+
+private:
+    unsigned int _curr_size; // the number of elements in heap
+    std::vector<index_pair> _array; // the heap array
+    std::unordered_map<unsigned int, unsigned int> _index_map; // map from index to position in heap
+
+    void percolate_down( int i);
+    void percolate_up( int i);
+};
+
+void IndexPriorityQueue::insert(const index_pair &e)
+{
+    if (_curr_size == _array.size() - 1)
+        _array.resize(_array.size() * 2);
+
+    // Percolate up
+    int hole = ++_curr_size;
+    _array[0] = e; // Temporary placeholder for easier percolation
+    for (; hole > 1 && e.second < _array[hole / 2].second; hole /= 2)
+        _array[hole] = std::move(_array[hole / 2]);
+    _array[hole] = std::move(_array[0]);
+
+    _index_map[e.first] = hole; // Update the map
+}
+
+bool IndexPriorityQueue::contain(const unsigned index) const
+{
+    return _index_map.contains(index);
+}
+
+unsigned int IndexPriorityQueue::delete_min()
+{
+    if (is_empty())
+        throw std::invalid_argument("Heap is empty");
+
+    auto [fst, snd] = _array[1];
+    _array[1] = std::move(_array[_curr_size--]);
+    percolate_down(1);
+
+    _index_map.erase(fst); // Remove from map
+    return fst;
+}
+
+void IndexPriorityQueue::change(const unsigned int index, const index_pair &e)
+{
+    if (const auto it = _index_map.find(index); it != _index_map.end())
+    {
+        const auto pos = it->second;
+        _array[pos] = e;
+        percolate_down(pos);
+        percolate_up(pos);
+    }
+}
+
+void IndexPriorityQueue::percolate_down( int i)
+{
+    int child;
+    index_pair tmp = std::move(_array[i]);
+    for (; i * 2 <= _curr_size; i = child)
+    {
+        child = i * 2;
+        if ((child != _curr_size) && (_array[child + 1].second < _array[child].second))
+            ++child;
+        if (_array[child].second < tmp.second)
+            _array[i] = std::move(_array[child]);
+        else
+            break;
+    }
+    _array[i] = std::move(tmp);
+    _index_map[_array[i].first] = i; // Update the map
+}
+
+void IndexPriorityQueue::percolate_up(int i)
+{
+    index_pair tmp = std::move(_array[i]);
+    for (; i > 1 && tmp.second < _array[i / 2].second; i /= 2)
+        _array[i] = std::move(_array[i / 2]);
+    _array[i] = std::move(tmp);
+    _index_map[_array[i].first] = i; // Update the map
+}
+// IndexMinPQ: index based priority queue
+export class IndexMinPQ
+{
+  public:
+    explicit IndexMinPQ(int max_heap = 100);
+    [[nodiscard]] auto is_empty() const
+    {
+        return _curr == 0;
+    }
+    [[nodiscard]] auto contains(int i) const
+    {
+        return _qp[i] != -1;
+    }
+    [[nodiscard]] auto size() const
+    {
+        return _curr;
+    }
+    void insert(int i, const double &);
+    int delete_min();
+    void change_key(int , double);
+
+  private:
+    int _max_N = 0;
+    int _curr = 0;
+    vector<int> _pq;      // binary heap using 1-based indexing
+    vector<int> _qp;      // inverse of pq - qp[pq[i]] = pq[qp[i]]=i
+    vector<double> _keys; // keys[i] = priority of i
+    void swim(int);
+    [[nodiscard]] bool greater(const int &i, const int &j) const
+    {
+        return _keys[_pq[i]] > _keys[_pq[j]];
+    }
+    void exchange(int i, int j);
+    void sink(int k);
+};
+IndexMinPQ::IndexMinPQ(const int max_heap) : _max_N(max_heap)
+{
+    _keys.resize(max_heap + 1);
+    _pq.resize(max_heap + 1);
+    _qp.resize(max_heap + 1);
+    std::fill(_qp.begin(), _qp.end(), -1);
+}
+void IndexMinPQ::insert(int i, const double &val)
+{
+    if (contains(i))
+        throw std::invalid_argument("Index already exists");
+    _curr++;
+    _qp[i] = _curr;
+    _pq[_curr] = i;
+    _keys[i] = val;
+    swim(_curr);
+}
+int IndexMinPQ::delete_min()
+{
+    if (is_empty())
+        throw std::invalid_argument("Heap is empty");
+    auto min = _pq[1];
+    exchange(1, _curr--);
+    sink(1);
+    assert(min == _pq[_curr + 1]);
+    _qp[min] = -1; // delete
+    _keys[min] = 0.0;
+    _pq[_curr + 1] = -1; // not needed
+    return min;
+}
+void IndexMinPQ::change_key(int k , double val)
+{
+    if (!contains(k))
+        throw std::invalid_argument("Index is not in the priority queue");
+    _keys[k] = val;
+    swim(_qp[k]);
+    sink(_qp[k]);
+}
+void IndexMinPQ::swim(int k)
+{
+    while (k > 1 && greater(k / 2, k))
+    {
+        exchange(k, k / 2);
+        k /= 2;
+    }
+}
+void IndexMinPQ::exchange(int i, int j)
+{
+    auto swap = _pq[i];
+    _pq[i] = _pq[j];
+    _pq[j] = swap;
+    _qp[_pq[i]] = i;
+    _qp[_pq[j]] = j;
+}
+void IndexMinPQ::sink(int k)
+{
+    while (2*k <= _curr)
+    {
+        int j = 2*k;
+        if (j<_curr && greater(j, j+1)) j++;
+        if (!greater(k,j)) break;
+        exchange(k, j);
+        k=j;
+    }
+}
+// Prim_MST: prim MST algorithm: eager version.
+export class PrimMST
+{
+  public:
+    explicit PrimMST(const EdgeWeightedGraph &g);
+    void visit(const EdgeWeightedGraph &g, unsigned int v);
+    [[nodiscard]] double weight() const;
+    [[nodiscard]] vector<Edge> mst_edge() const;
+  private:
+    vector<bool> _marked;
+    vector<Edge> _edge_to;
+    vector<double> _dist_to;
+    IndexMinPQ _pq;
+};
+PrimMST::PrimMST(const EdgeWeightedGraph &g)
+{
+    _marked.resize(g.v()); // request storage
+    _edge_to.resize(g.v());
+    _dist_to.resize(g.v());
+    _pq = IndexMinPQ(static_cast<int>(g.v()));
+
+    std::fill(_dist_to.begin(), _dist_to.end(),
+        std::numeric_limits<double>::max());
+    _dist_to[0] = 0.0;
+    _pq.insert(0,0.0);
+    while (!_pq.is_empty())
+        visit(g, _pq.delete_min());
+}
+void PrimMST::visit(const EdgeWeightedGraph &g, unsigned int v)
+{
+    _marked[v] = true;
+    for (const auto &e : g.adj(v))
+    {
+        auto w = e.other(v);
+        if (_marked[w])
+            continue; // v-w is ineligible
+        if (e.weight() < _dist_to[w])
+        {
+            // Edge e is the new best connection from tree to w
+            _edge_to[w] = e;
+            _dist_to[w] = e.weight();
+            if (_pq.contains(static_cast<int>(w)))
+                _pq.change_key(static_cast<int>(w), _dist_to[w]);
+            else _pq.insert(static_cast<int>(w), _dist_to[w]);
+        }
+    }
+}
+
+double PrimMST::weight() const
+{
+    auto sum = 0.0;
+    for (const auto &item : mst_edge())
+        sum += item.weight();
+    return sum;
+}
+vector<Edge> PrimMST::mst_edge() const
+{
+    vector<Edge> res;
+    for (auto i=1; i < _edge_to.size(); ++i)
+        res.push_back(_edge_to[i]);
     return res;
 }

@@ -55,7 +55,6 @@ void test_mst_from_file(const string &filename);
 
 void test_mst_from_file_eager(const string &filename);
 
-void test_minindex_pq();
 int main()
 {
     test_mst_from_file("tiny.txt");
@@ -257,28 +256,4 @@ void test_mst_from_file_eager(const string &filename)
     fmt::println("");*/
     auto wg = mst_eager.weight();
     std::cout << "eager version : "<<wg << std::endl;
-}
-
-void test_minindex_pq()
-{
-    auto pq = IndexPriorityQueue();
-    vector<std::pair<unsigned int, double>> v = {
-        make_pair(0,0.1), make_pair(1,0.2), make_pair(2,0.3),
-        make_pair(3,0.4),make_pair(4,0.5), make_pair(5,0.6),
-        make_pair(6,0.7), make_pair(7,0.8),
-        make_pair(8,0.9), make_pair(9,1.0)
-    };
-    for (const auto &i : v)
-        pq.insert(i);
-    auto reprsentation = pq.curr_heap_structure();
-    for (const auto &i : reprsentation)
-        fmt::print("[{} {}] ", i.first, i.second);
-    fmt::println("");
-    pq.change(0, make_pair(0,-1.5));
-    pq.change(11, make_pair(11,11.5));
-
-    reprsentation = pq.curr_heap_structure();
-    for (const auto &i : reprsentation)
-        fmt::print("[{} {}] ", i.first, i.second);
-    fmt::println("");
 }

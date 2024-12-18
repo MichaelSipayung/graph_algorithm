@@ -1,6 +1,6 @@
 module;
+#include <cassert>
 export module algo_graph;
-#include <assert.h>
 import <iostream>;
 import <vector>;
 import <istream>;
@@ -1162,117 +1162,6 @@ vector<Edge> LazyPrimMST::edges_to_vector() const
     return res;
 }
 
-// priority queue implementation with extra index
-export class IndexPriorityQueue
-{
-public:
-    typedef std::pair<unsigned int, double> index_pair;
-    explicit IndexPriorityQueue(const unsigned int capacity = 100)
-        : _curr_size(0)
-    {
-        _array.resize(capacity + 1); // +1 to accommodate 1-based indexing
-    }
-
-    [[nodiscard]] bool is_empty() const
-    {
-        return _curr_size == 0;
-    }
-
-    void insert(const index_pair &e);
-    [[nodiscard]] bool contain(unsigned index) const;
-    unsigned int delete_min();
-    void change(unsigned int index, const index_pair &e);
-    [[nodiscard]] auto curr_heap_structure()const
-    {
-        auto temp = decltype(_array)();
-        for (auto i=1; i<=_curr_size; ++i)
-            temp.push_back(_array[i]);
-        return temp;
-    }
-    [[nodiscard]] unsigned int size() const
-    {
-        return _curr_size;
-    }
-
-private:
-    unsigned int _curr_size; // the number of elements in heap
-    std::vector<index_pair> _array; // the heap array
-    std::unordered_map<unsigned int, unsigned int> _index_map; // map from index to position in heap
-
-    void percolate_down( int i);
-    void percolate_up( int i);
-};
-
-void IndexPriorityQueue::insert(const index_pair &e)
-{
-    if (_curr_size == _array.size() - 1)
-        _array.resize(_array.size() * 2);
-
-    // Percolate up
-    int hole = ++_curr_size;
-    _array[0] = e; // Temporary placeholder for easier percolation
-    for (; hole > 1 && e.second < _array[hole / 2].second; hole /= 2)
-        _array[hole] = std::move(_array[hole / 2]);
-    _array[hole] = std::move(_array[0]);
-
-    _index_map[e.first] = hole; // Update the map
-}
-
-bool IndexPriorityQueue::contain(const unsigned index) const
-{
-    return _index_map.contains(index);
-}
-
-unsigned int IndexPriorityQueue::delete_min()
-{
-    if (is_empty())
-        throw std::invalid_argument("Heap is empty");
-
-    auto [fst, snd] = _array[1];
-    _array[1] = std::move(_array[_curr_size--]);
-    percolate_down(1);
-
-    _index_map.erase(fst); // Remove from map
-    return fst;
-}
-
-void IndexPriorityQueue::change(const unsigned int index, const index_pair &e)
-{
-    if (const auto it = _index_map.find(index); it != _index_map.end())
-    {
-        const auto pos = it->second;
-        _array[pos] = e;
-        percolate_down(pos);
-        percolate_up(pos);
-    }
-}
-
-void IndexPriorityQueue::percolate_down( int i)
-{
-    int child;
-    index_pair tmp = std::move(_array[i]);
-    for (; i * 2 <= _curr_size; i = child)
-    {
-        child = i * 2;
-        if ((child != _curr_size) && (_array[child + 1].second < _array[child].second))
-            ++child;
-        if (_array[child].second < tmp.second)
-            _array[i] = std::move(_array[child]);
-        else
-            break;
-    }
-    _array[i] = std::move(tmp);
-    _index_map[_array[i].first] = i; // Update the map
-}
-
-void IndexPriorityQueue::percolate_up(int i)
-{
-    index_pair tmp = std::move(_array[i]);
-    for (; i > 1 && tmp.second < _array[i / 2].second; i /= 2)
-        _array[i] = std::move(_array[i / 2]);
-    _array[i] = std::move(tmp);
-    _index_map[_array[i].first] = i; // Update the map
-}
 // IndexMinPQ: index based priority queue
 export class IndexMinPQ
 {
@@ -1315,21 +1204,21 @@ IndexMinPQ::IndexMinPQ(const int max_heap) : _max_N(max_heap)
     _qp.resize(max_heap + 1);
     std::fill(_qp.begin(), _qp.end(), -1);
 }
-void IndexMinPQ::insert(int i, const double &val)
+void IndexMinPQ::insert(const int i, const double &val)
 {
     if (contains(i))
         throw std::invalid_argument("Index already exists");
     _curr++;
     _qp[i] = _curr;
-    _pq[_curr] = i;
-    _keys[i] = val;
+    _pq[_qp[i]] = i;
+    _keys[_pq[_qp[i]]] = val;
     swim(_curr);
 }
 int IndexMinPQ::delete_min()
 {
     if (is_empty())
         throw std::invalid_argument("Heap is empty");
-    auto min = _pq[1];
+    const auto min = _pq[1];
     exchange(1, _curr--);
     sink(1);
     assert(min == _pq[_curr + 1]);
@@ -1356,7 +1245,7 @@ void IndexMinPQ::swim(int k)
 }
 void IndexMinPQ::exchange(int i, int j)
 {
-    auto swap = _pq[i];
+    const auto swap = _pq[i];
     _pq[i] = _pq[j];
     _pq[j] = swap;
     _qp[_pq[i]] = i;
@@ -1373,6 +1262,7 @@ void IndexMinPQ::sink(int k)
         k=j;
     }
 }
+
 // Prim_MST: prim MST algorithm: eager version.
 export class PrimMST
 {
@@ -1406,7 +1296,7 @@ void PrimMST::visit(const EdgeWeightedGraph &g, unsigned int v)
     _marked[v] = true;
     for (const auto &e : g.adj(v))
     {
-        auto w = e.other(v);
+        const auto w = e.other(v);
         if (_marked[w])
             continue; // v-w is ineligible
         if (e.weight() < _dist_to[w])

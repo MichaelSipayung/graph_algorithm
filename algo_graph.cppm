@@ -10,8 +10,7 @@ import <queue>;
 import <fstream>;
 import <map>;
 import <sstream>;
-import <unordered_map>;
-using std::unordered_map;
+import <numeric>;
 using std::map;
 using std::queue;
 using std::string;
@@ -1028,7 +1027,8 @@ export template <typename Comparable> class BinaryHeap
     void build_heap();
     void percolate_down(unsigned int i);
 };
-template <typename Comparable> BinaryHeap<Comparable>::BinaryHeap(unsigned int capacity) : _curr_size(0)
+template <typename Comparable> BinaryHeap<Comparable>::BinaryHeap(unsigned int capacity)
+    : _curr_size(0)
 {
     _array.resize(capacity);
 }
@@ -1181,7 +1181,7 @@ export class IndexMinPQ
     }
     void insert(int i, const double &);
     int delete_min();
-    void change_key(int , double);
+    void change_key(int, double);
 
   private:
     int _max_N = 0;
@@ -1227,7 +1227,7 @@ int IndexMinPQ::delete_min()
     _pq[_curr + 1] = -1; // not needed
     return min;
 }
-void IndexMinPQ::change_key(int k , double val)
+void IndexMinPQ::change_key(int k, double val)
 {
     if (!contains(k))
         throw std::invalid_argument("Index is not in the priority queue");
@@ -1253,13 +1253,15 @@ void IndexMinPQ::exchange(int i, int j)
 }
 void IndexMinPQ::sink(int k)
 {
-    while (2*k <= _curr)
+    while (2 * k <= _curr)
     {
-        int j = 2*k;
-        if (j<_curr && greater(j, j+1)) j++;
-        if (!greater(k,j)) break;
+        int j = 2 * k;
+        if (j < _curr && greater(j, j + 1))
+            j++;
+        if (!greater(k, j))
+            break;
         exchange(k, j);
-        k=j;
+        k = j;
     }
 }
 
@@ -1271,6 +1273,7 @@ export class PrimMST
     void visit(const EdgeWeightedGraph &g, unsigned int v);
     [[nodiscard]] double weight() const;
     [[nodiscard]] vector<Edge> mst_edge() const;
+
   private:
     vector<bool> _marked;
     vector<Edge> _edge_to;
@@ -1284,10 +1287,9 @@ PrimMST::PrimMST(const EdgeWeightedGraph &g)
     _dist_to.resize(g.v());
     _pq = IndexMinPQ(static_cast<int>(g.v()));
 
-    std::fill(_dist_to.begin(), _dist_to.end(),
-        std::numeric_limits<double>::max());
+    std::fill(_dist_to.begin(), _dist_to.end(), std::numeric_limits<double>::max());
     _dist_to[0] = 0.0;
-    _pq.insert(0,0.0);
+    _pq.insert(0, 0.0);
     while (!_pq.is_empty())
         visit(g, _pq.delete_min());
 }
@@ -1306,7 +1308,8 @@ void PrimMST::visit(const EdgeWeightedGraph &g, unsigned int v)
             _dist_to[w] = e.weight();
             if (_pq.contains(static_cast<int>(w)))
                 _pq.change_key(static_cast<int>(w), _dist_to[w]);
-            else _pq.insert(static_cast<int>(w), _dist_to[w]);
+            else
+                _pq.insert(static_cast<int>(w), _dist_to[w]);
         }
     }
 }
@@ -1321,7 +1324,101 @@ double PrimMST::weight() const
 vector<Edge> PrimMST::mst_edge() const
 {
     vector<Edge> res;
-    for (auto i=1; i < _edge_to.size(); ++i)
+    for (auto i = 1; i < _edge_to.size(); ++i)
         res.push_back(_edge_to[i]);
     return res;
+}
+
+// UnionFind: union find algorithm
+export class UnionFind
+{
+  public:
+    explicit UnionFind(const int n) : _count(n)
+    {
+        _id.resize(n);
+        std::iota(_id.begin(), _id.end(), 0);
+    }
+    [[nodiscard]] int count() const
+    {
+        return _count;
+    }
+    [[nodiscard]] int find(int) const;
+    void union_component(int, int);
+    [[nodiscard]] bool connected(int, int) const;
+
+  private:
+    vector<int> _id; // access to component id
+    int _count = 0;
+};
+int UnionFind::find(int p) const
+{
+    while(p != _id[p])
+        p= _id[p];
+    return p;
+}
+void UnionFind::union_component(int p, int q)
+{
+    auto p_root = find(p);
+    auto q_root = find(q);
+    if(p_root == q_root)
+        return ;
+    _id[p_root] = q_root;
+    _count--;
+}
+bool UnionFind::connected(int p, int q) const
+{
+    return find(p)==find(q);
+}
+
+export class KruskalMST
+{
+  public:
+    explicit KruskalMST(const EdgeWeightedGraph &g);
+    [[nodiscard]] vector<Edge> edges() const;
+    [[nodiscard]] double weight() const;
+
+  private:
+    queue<Edge> _mst;
+};
+KruskalMST::KruskalMST(const EdgeWeightedGraph &g)
+{
+    auto pq = BinaryHeap<Edge>(g.v());;
+    // for (auto i =0; i < g.v(); ++i)
+    //     for (const auto & item : g.adj(i))
+    //         pq.insert(item);
+    for(const auto &item : g.edges())
+        pq.insert(item);
+    if(pq.size()>g.e())
+        throw std::runtime_error("bad structure... check heap");
+    auto uf = UnionFind(g.v());
+    while (!pq.is_empty() && (_mst.size() < (g.v()-1)))
+    {
+        // std::cout<<"pq size: "<< pq.size() << "mst size: "<<_mst.size()<<std::endl;
+        auto e = pq.find_min(); // get min weight edge on pq
+        pq.delete_min();
+        const auto v = e.either(); // and its vertices
+        const auto w = e.other(v);
+        if (uf.connected(v, w)) continue;
+        uf.union_component(v, w);
+        _mst.push(e);
+    }
+}
+vector<Edge> KruskalMST::edges() const
+{
+    auto res = _mst;
+    auto mst_edge = decltype(KruskalMST::edges())();
+    while (!res.empty())
+    {
+        const auto e = res.front();
+        mst_edge.push_back(e);
+        res.pop();
+    }
+    return mst_edge;
+}
+double KruskalMST::weight() const
+{
+    auto sum = 0.0;
+    for (const auto &item : edges())
+        sum += item.weight();
+    return sum;
 }

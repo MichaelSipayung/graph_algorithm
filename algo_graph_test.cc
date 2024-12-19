@@ -5,17 +5,17 @@ import <sstream>;
 import <stack>;
 import <queue>;
 import algo_graph;
+#include <cassert>
 #include <fmt/core.h>
 #include <fmt/ranges.h>
-#include <cassert>
 
 import <algorithm>;
 using std::cout;
 using std::endl;
 using std::make_pair;
 using std::pair;
-using std::vector;
 using std::string;
+using std::vector;
 
 typedef vector<vector<unsigned int>> adj_list;
 
@@ -55,15 +55,23 @@ void test_mst_from_file(const string &filename);
 
 void test_mst_from_file_eager(const string &filename);
 
+void test_kruskal_from_file(const string &filename);
 int main()
 {
     test_mst_from_file("tiny.txt");
     test_mst_from_file("medium.txt");
     test_mst_from_file("large.txt");
-
+    fmt::println("");
+    
     test_mst_from_file_eager("tiny.txt");
     test_mst_from_file_eager("medium.txt");
     test_mst_from_file_eager("large.txt");
+    fmt::println("");
+
+    test_kruskal_from_file("tiny.txt");
+    test_kruskal_from_file("medium.txt");
+    test_kruskal_from_file("large.txt");
+
     // test_minindex_pq();
     return 0;
 }
@@ -234,26 +242,23 @@ void test_show_strong_components(const Digraph &data)
 void test_mst_from_file(const string &filename)
 {
     const auto edge_weight = EdgeWeightedGraph(filename);
-    fmt::println("total vertex: {} edge: {}", edge_weight.v(), edge_weight.e());
+    fmt::println("lazy version, total vertex: {} edge: {}", edge_weight.v(), edge_weight.e());
     const auto lazy_prim = LazyPrimMST(edge_weight);
-    /*for (const auto &i : lazy_prim.edges_to_vector())
-        fmt::print("[{} {} {}]", i.either(), i.other(i.either()),
-            i.weight());
-    fmt::println("");*/
-
-    // fmt::println("lazy version: {}", lazy_prim.weight());
-    std::cout<<"lazy version: "<< lazy_prim.weight()<<endl;
+    fmt::println("weight : {:.5f}", lazy_prim.weight());
 }
 
 void test_mst_from_file_eager(const string &filename)
 {
     auto g = EdgeWeightedGraph(filename);
-    fmt::println("total vertex: {} edge: {}", g.v(), g.e());
+    fmt::println("eager version, total vertex: {} edge: {}", g.v(), g.e());
     const auto mst_eager = PrimMST(g);
-    /*for (const auto &i : mst_eager.mst_edge())
-        fmt::print("[{} {} {}]", i.either(), i.other(i.either()),
-            i.weight());
-    fmt::println("");*/
-    auto wg = mst_eager.weight();
-    std::cout << "eager version : "<<wg << std::endl;
+    fmt::println("weight : {:.5f}", mst_eager.weight());
+
+}
+void test_kruskal_from_file(const string &filename)
+{
+    auto wg = EdgeWeightedGraph(filename);
+    fmt::println("kruskal version, total vertex: {} edge: {}", wg.v(), wg.e());
+    auto kruskal = KruskalMST(wg);
+    fmt::println("weight : {:.5f}", kruskal.weight());
 }
